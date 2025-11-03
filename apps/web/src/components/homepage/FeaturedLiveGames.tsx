@@ -95,26 +95,64 @@ export function FeaturedLiveGames() {
   const fetchFeaturedGames = async () => {
     try {
       setError(null);
-      const response = await fetch('/api/games/featured');
-      if (!response.ok) {
-        console.error('Featured games API error:', response.status);
-        setError(`API error: ${response.status}`);
+      
+      // Create AbortController for timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+      
+      try {
+        const response = await fetch('/api/games/featured', {
+          signal: controller.signal,
+        });
+        
+        clearTimeout(timeoutId);
+        
+        let data;
+        try {
+          data = await response.json();
+        } catch (jsonError) {
+          console.error('Error parsing featured games response:', jsonError);
+          setError('Invalid response from server');
+          setGames([]);
+          setCurrentMoveIndex([]);
+          setLoading(false);
+          return;
+        }
+        
+        // Even if response is not ok, try to get games array for graceful degradation
+        if (!response.ok) {
+          console.error('Featured games API error:', response.status);
+          if (data.error) {
+            setError(data.error);
+          } else {
+            setError(`API error: ${response.status}`);
+          }
+        }
+        
+        // Always set games, even if empty (enables placeholder rendering)
+        if (data.games && Array.isArray(data.games)) {
+          setGames(data.games);
+          setCurrentMoveIndex(data.games.map(() => 0));
+        } else {
+          setGames([]);
+          setCurrentMoveIndex([]);
+        }
+        setLoading(false);
+      } catch (fetchError: any) {
+        clearTimeout(timeoutId);
+        
+        // Handle abort (timeout) specifically
+        if (fetchError.name === 'AbortError') {
+          console.error('Featured games API request timed out');
+          setError('Request timed out. Please try again.');
+        } else {
+          throw fetchError; // Re-throw to outer catch
+        }
+        
         setGames([]);
         setCurrentMoveIndex([]);
         setLoading(false);
-        return;
       }
-      
-      const data = await response.json();
-      
-      if (data.games) {
-        setGames(data.games);
-        setCurrentMoveIndex(data.games.map(() => 0));
-      } else {
-        setGames([]);
-        setCurrentMoveIndex([]);
-      }
-      setLoading(false);
     } catch (error) {
       console.error('Error fetching featured games:', error);
       setError('Failed to load featured games');
@@ -127,7 +165,19 @@ export function FeaturedLiveGames() {
   useEffect(() => {
     fetchFeaturedGames();
     const interval = setInterval(fetchFeaturedGames, 10000);
-    return () => clearInterval(interval);
+    
+    // Fallback timeout: if loading state persists for more than 15 seconds, force it to false
+    // This ensures placeholders always show even if something goes wrong
+    const fallbackTimeout = setTimeout(() => {
+      console.warn('Featured games loading timeout - forcing loading to false');
+      setLoading(false);
+      setError('Loading took longer than expected. Showing placeholder boards.');
+    }, 15000);
+    
+    return () => {
+      clearInterval(interval);
+      clearTimeout(fallbackTimeout);
+    };
   }, []);
 
   // Present auto-play moves for each game
