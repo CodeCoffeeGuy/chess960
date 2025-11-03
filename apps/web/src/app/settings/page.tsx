@@ -7,6 +7,7 @@ import { User, Bell, Palette, Shield, Trash2, CreditCard, Sun, Moon, Key, Eye, E
 import { CustomSelect } from '@/components/ui/CustomSelect';
 import { useTheme } from '@/contexts/ThemeContext';
 import { ThemeSettings } from '@/components/settings/ThemeSettings';
+import { getUserContextFromCookies } from '@chess960/utils';
 
 // Custom Checkbox Component
 const CustomCheckbox = ({ checked, onChange, className = '' }: { checked: boolean; onChange: (checked: boolean) => void; className?: string }) => {
@@ -72,12 +73,49 @@ export default function SettingsPage() {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [hasPassword, setHasPassword] = useState(true); // Assume true until we know otherwise
+  const [authValidated, setAuthValidated] = useState(false);
 
   useEffect(() => {
     window.scrollTo(0, 0);
+    
+    // Wait for session status to be determined
+    if (status === 'loading') {
+      setAuthValidated(false);
+      return;
+    }
+
+    // Check both NextAuth session and auth-token cookie for proper state validation
+    const cookieContext = getUserContextFromCookies();
+    const isAuthenticatedViaCookie = cookieContext.isAuth && cookieContext.type === 'user';
+    
+    // If NextAuth says unauthenticated, reset validation and redirect
     if (status === 'unauthenticated') {
-      router.push('/auth/signin');
-    } else if (session?.user) {
+      setAuthValidated(false);
+      // If there's a guest token, redirect to guest profile instead
+      if (cookieContext.type === 'guest') {
+        router.push('/guest/profile');
+      } else {
+        router.push('/auth/signin');
+      }
+      return;
+    }
+
+    // If NextAuth says authenticated, verify with auth-token cookie
+    if (status === 'authenticated' && session?.user) {
+      // If NextAuth session exists but auth-token says guest or doesn't exist,
+      // user is logged out - redirect appropriately
+      if (!isAuthenticatedViaCookie) {
+        // User logged out - clear any stale session data
+        setAuthValidated(false);
+        if (cookieContext.type === 'guest') {
+          router.push('/guest/profile');
+        } else {
+          router.push('/auth/signin');
+        }
+        return;
+      }
+
+      // Both NextAuth and auth-token confirm user is authenticated
       const user = session.user as { handle?: string; email?: string };
       setUsername(user.handle || '');
       setEmail(user.email || '');
@@ -85,6 +123,7 @@ export default function SettingsPage() {
       fetchUserInfo();
       // Load preferences from localStorage
       loadPreferences();
+      setAuthValidated(true);
     }
   }, [status, session, router]);
 
@@ -118,9 +157,26 @@ export default function SettingsPage() {
         setTournamentNotifications(data.tournamentNotifications ?? true);
         // Check if user has a password (for password change feature)
         setHasPassword(data.hasPassword ?? true);
+      } else if (response.status === 401 || response.status === 403) {
+        // User is not authenticated - redirect appropriately
+        const cookieContext = getUserContextFromCookies();
+        if (cookieContext.type === 'guest') {
+          router.push('/guest/profile');
+        } else {
+          router.push('/auth/signin');
+        }
       }
     } catch (_error) {
       console.error('Failed to fetch user info:', _error);
+      // On error, check if we should redirect
+      const cookieContext = getUserContextFromCookies();
+      if (!cookieContext.isAuth || cookieContext.type !== 'user') {
+        if (cookieContext.type === 'guest') {
+          router.push('/guest/profile');
+        } else {
+          router.push('/auth/signin');
+        }
+      }
     }
   };
 
@@ -290,7 +346,17 @@ export default function SettingsPage() {
     ? countries.filter(c => c.name.toLowerCase().includes(countrySearch.toLowerCase()))
     : [];
 
-  if (status === 'loading') {
+  // Show loading while session is loading or while validating authentication
+  if (status === 'loading' || (!authValidated && status === 'authenticated')) {
+    return (
+      <div className="min-h-screen bg-[#1f1d1a] light:bg-[#f5f1ea] flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-orange-300 border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
+  // Don't render content if not authenticated and validated
+  if (status === 'unauthenticated' || !authValidated) {
     return (
       <div className="min-h-screen bg-[#1f1d1a] light:bg-[#f5f1ea] flex items-center justify-center">
         <div className="w-8 h-8 border-4 border-orange-300 border-t-transparent rounded-full animate-spin"></div>

@@ -157,16 +157,33 @@ export function Navigation() {
       // Track logout
       trackUserSignOut();
 
-      // NextAuth logout
-      await signOut({ callbackUrl: '/' });
+      // First, clear the auth-token cookie via API
+      try {
+        await fetch('/api/auth/logout', {
+          method: 'POST',
+          credentials: 'include',
+        });
+      } catch (error) {
+        console.error('Failed to clear auth-token cookie:', error);
+        // Continue with logout even if this fails
+      }
+
+      // Then, clear NextAuth session
+      await signOut({ 
+        callbackUrl: '/',
+        redirect: true 
+      });
     } catch (error) {
       console.error('Logout failed:', error);
+      // Even if NextAuth logout fails, try to redirect
+      window.location.href = '/';
     }
   };
 
   const navItems = [
     { href: '/', label: 'Home' },
     { href: '/play', label: 'Play' },
+    { href: '/games/live', label: 'Watch' },
     { href: '/tournaments', label: 'Tournaments' },
     { href: '/leaderboard', label: 'Leaderboard' },
     { href: '/teams', label: 'Teams' },
