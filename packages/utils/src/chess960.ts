@@ -90,12 +90,22 @@ export function positionToBackRank(n: number): string[] {
 
 /**
  * Convert back rank pieces to FEN notation for starting position
+ * FEN format: rank8/rank7/.../rank2/rank1
+ * Standard FEN: rank 8 = black pieces (uppercase), rank 1 = white pieces (lowercase)
+ * This ensures white pieces appear at bottom (rank 1) and black at top (rank 8) when displayed
  */
 export function backRankToFEN(pieces: string[]): string {
-  const whitePieces = pieces.join('').toLowerCase();
-  const blackPieces = pieces.join('');
+  // Join pieces array into string: uppercase for black, lowercase for white
+  const backRank = pieces.join('');
+  const whiteBackRank = backRank.toLowerCase();
+  const blackBackRank = backRank.toUpperCase();
 
-  return `${blackPieces}/pppppppp/8/8/8/8/PPPPPPPP/${whitePieces} w KQkq - 0 1`;
+  // Standard FEN format: rank8/rank7/.../rank2/rank1
+  // chess.js interprets: first rank in FEN (rank8) = board[0], last rank (rank1) = board[7]
+  // For correct display: board[0] should be black (rank 8), board[7] should be white (rank 1)
+  // Testing shows chess.js wants: lowercase at rank 8 (first), uppercase at rank 1 (last)
+  // This is inverted from standard FEN notation, but matches chess.js behavior
+  return `${whiteBackRank}/pppppppp/8/8/8/8/PPPPPPPP/${blackBackRank} w KQkq - 0 1`;
 }
 
 /**

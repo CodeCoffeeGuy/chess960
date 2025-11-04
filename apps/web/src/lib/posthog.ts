@@ -17,17 +17,9 @@ export const initPosthog = () => {
       person_profiles: 'identified_only',
       capture_pageview: false, // We handle pageviews manually
       capture_pageleave: true,
-      // Session recording - disabled in production to prevent connection errors
-      // Re-enable once PostHog session recording is properly configured
-      session_recording: process.env.NODE_ENV === 'production' 
-        ? {
-            enabled: false, // Disable in production to prevent lazy-recorder.js connection errors
-          }
-        : {
-            recordCrossOriginIframes: false,
-            maskAllInputs: true,
-            maskTextSelector: '[data-private]',
-          },
+      // Session recording - completely disabled to prevent connection errors
+      // Using disable_session_recording instead of session_recording.enabled for proper disabling
+      disable_session_recording: true,
       loaded: (_posthog) => {
         if (process.env.NODE_ENV === 'development') {
           console.log('PostHog loaded');

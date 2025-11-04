@@ -6,6 +6,72 @@ import { guestRatingManager } from './guest-rating-manager';
 
 export class GamePersistenceService {
   
+  // Persist game when it starts (for live games list)
+  async persistGameStart(gameState: GameState): Promise<void> {
+    if (!gameState.tc) {
+      console.error('Game missing time control:', gameState.id);
+      return;
+    }
+
+    try {
+      // Map time control to database enum
+      const tcEnum = timeControlToDbEnum(gameState.tc as any);
+      
+      // Use speed-based rating category for getting ratings
+      const ratingTc = timeControlToRatingCategory(gameState.tc as any) as any;
+
+      // Get ratings before the game for both players
+      const [whiteRating, blackRating] = await Promise.all([
+        this.getOrCreateRating(gameState.whiteId, ratingTc),
+        this.getOrCreateRating(gameState.blackId, ratingTc),
+      ]);
+
+      // Handle guest users
+      const isWhiteGuest = gameState.whiteId.startsWith('guest_');
+      const isBlackGuest = gameState.blackId.startsWith('guest_');
+
+      const whiteRatingBefore = isWhiteGuest 
+        ? (await guestRatingManager.getGuestRating(gameState.whiteId, ratingTc)).rating
+        : (whiteRating ? Math.round(Number(whiteRating.rating)) : 1500);
+      
+      const blackRatingBefore = isBlackGuest 
+        ? (await guestRatingManager.getGuestRating(gameState.blackId, ratingTc)).rating
+        : (blackRating ? Math.round(Number(blackRating.rating)) : 1500);
+
+      // Create game record without endedAt (game is live)
+      await db.game.upsert({
+        where: { id: gameState.id },
+        create: {
+          id: gameState.id,
+          whiteId: gameState.whiteId,
+          blackId: gameState.blackId,
+          tc: tcEnum as any,
+          rated: true,
+          chess960Position: gameState.chess960Position,
+          startedAt: new Date(gameState.startedAt),
+          endedAt: null, // Game is live
+          result: null,
+          whiteTimeMs: gameState.timeLeft.white,
+          blackTimeMs: gameState.timeLeft.black,
+          whiteIncMs: gameState.increment.white,
+          blackIncMs: gameState.increment.black,
+          whiteRatingBefore,
+          blackRatingBefore,
+        },
+        update: {
+          // Update if game already exists (shouldn't happen, but handle it)
+          whiteTimeMs: gameState.timeLeft.white,
+          blackTimeMs: gameState.timeLeft.black,
+        },
+      });
+
+      console.log(`Game ${gameState.id} persisted as live game`);
+    } catch (error) {
+      console.error('Failed to persist game start:', gameState.id, error);
+      // Don't throw - we don't want to block game creation if persistence fails
+    }
+  }
+  
   async persistGame(gameState: GameState): Promise<void> {
     if (!gameState.result || !gameState.ended) {
       console.warn('Attempting to persist incomplete game:', gameState.id);
@@ -42,15 +108,17 @@ export class GamePersistenceService {
         ? (await guestRatingManager.getGuestRating(gameState.blackId, ratingTc)).rating
         : (blackRating ? Math.round(Number(blackRating.rating)) : 1500);
 
-      // Create game record with initial ratings
-      const game = await db.game.create({
-        data: {
+      // Update existing game record (it should have been created when game started)
+      // Use upsert in case the game start wasn't persisted for some reason
+      const game = await db.game.upsert({
+        where: { id: gameState.id },
+        create: {
           id: gameState.id,
           whiteId: gameState.whiteId,
           blackId: gameState.blackId,
           tc: tcEnum as any,
-          rated: true, // MVP assumes all games are rated
-          chess960Position: gameState.chess960Position, // Chess960 position (1-960)
+          rated: true,
+          chess960Position: gameState.chess960Position,
           startedAt: new Date(gameState.startedAt),
           endedAt: new Date(),
           result: gameState.result,
@@ -60,6 +128,12 @@ export class GamePersistenceService {
           blackIncMs: gameState.increment.black,
           whiteRatingBefore,
           blackRatingBefore,
+        },
+        update: {
+          endedAt: new Date(),
+          result: gameState.result,
+          whiteTimeMs: gameState.timeLeft.white,
+          blackTimeMs: gameState.timeLeft.black,
         },
       });
 

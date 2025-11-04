@@ -151,3 +151,5 @@ Based on the original TODO list and Lichess comparison:
 
 The board is fully functional for its primary use case (drag & drop with visual feedback), and matches Lichess in most core features.
 
+
+

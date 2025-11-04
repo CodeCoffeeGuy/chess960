@@ -8,6 +8,7 @@ import { TimeControlModal } from '@/components/game/TimeControlModal';
 import { LiveStats } from '@/components/LiveStats';
 import { BetaNotification } from '@/components/BetaNotification';
 import { useHomepageWebSocket } from '@/hooks/useHomepageWebSocket';
+import { FeaturedLiveGames } from '@/components/homepage/FeaturedLiveGames';
 
 export default function HomePageClient() {
   const { data: session, status } = useSession();
@@ -118,7 +119,7 @@ export default function HomePageClient() {
         {/* Time Controls - Category First */}
         <div className="mt-8 sm:mt-10 md:mt-12 max-w-4xl mx-auto">
           {/* Speed Categories */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-48">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-12">
             {/* Bullet */}
             <button
               onClick={() => {
@@ -178,6 +179,11 @@ export default function HomePageClient() {
         </div>
 
         </div>
+      </div>
+
+      {/* Featured Live Games */}
+      <div className="relative">
+        <FeaturedLiveGames />
       </div>
 
       {/* Time Control Modal */}

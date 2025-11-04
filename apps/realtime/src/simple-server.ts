@@ -24,6 +24,7 @@ interface ClientConnection {
   connectedAt: number;
   lastPing: number;
   subscribedTeamTournaments: Set<string>; // Track team tournament subscriptions
+  spectatingGames: Set<string>; // Track games being spectated
 }
 
 interface QueueEntry {
@@ -435,6 +436,7 @@ export class SimpleRealtimeServer {
         connectedAt: Date.now(),
         lastPing: Date.now(),
         subscribedTeamTournaments: new Set<string>(),
+        spectatingGames: new Set<string>(),
       };
 
       this.connections.set(ws, connection);
@@ -538,6 +540,12 @@ export class SimpleRealtimeServer {
         break;
       case 'team-tournament.unsubscribe':
         await this.handleTeamTournamentUnsubscribe(connection, message);
+        break;
+      case 'game.spectate':
+        await this.handleGameSpectate(connection, message);
+        break;
+      case 'game.unspectate':
+        await this.handleGameUnspectate(connection, message);
         break;
       default:
         this.sendError(connection, 'UNKNOWN_MESSAGE_TYPE', `Unknown message type: ${message.t}`);
@@ -679,6 +687,11 @@ export class SimpleRealtimeServer {
     if (connection.user) {
       // Publish user disconnection to Redis
       this.redisPubSub.publishUserDisconnect(connection.user.id);
+      
+      // Clean up spectator subscriptions
+      connection.spectatingGames.forEach((gameId) => {
+        console.log(`[SPECTATE] User ${connection.user!.handle} disconnected, removed from spectating game ${gameId}`);
+      });
       
       // Add a grace period before removing from queue to allow for reconnections
       setTimeout(() => {
@@ -846,6 +859,11 @@ export class SimpleRealtimeServer {
     // Set current game for both connections
     player1.connection.currentGameId = gameId;
     player2.connection.currentGameId = gameId;
+
+    // Persist game start to database (for live games list)
+    this.persistGameStart(game).catch((error) => {
+      console.error('[ERR] Failed to persist game start:', error);
+    });
   }
 
   private sendMessage(connection: ClientConnection, message: ServerMessage) {
@@ -1331,6 +1349,11 @@ export class SimpleRealtimeServer {
     }
 
     console.log(`[REMATCH] Created new game ${newGameId} from rematch of ${gameId}`);
+    
+    // Persist rematch game start to database (for live games list)
+    this.persistGameStart(newGame).catch((error) => {
+      console.error('[ERR] Failed to persist rematch game start:', error);
+    });
   }
 
   private async handleRematchDecline(connection: ClientConnection, message: any) {
@@ -1649,7 +1672,7 @@ export class SimpleRealtimeServer {
     }
   }
 
-  // Helper method to broadcast to all players in a game
+  // Helper method to broadcast to all players and spectators in a game
   private broadcastToGame(gameId: string, message: any, excludeUserId?: string) {
     const game = this.gameManager.getGame(gameId);
     if (!game) return;
@@ -1657,8 +1680,13 @@ export class SimpleRealtimeServer {
     let sentCount = 0;
     for (const [ws, connection] of this.connections.entries()) {
       // Check if connection is for a player in this game (either by currentGameId OR by being whiteId/blackId)
-      const isInGame = connection.currentGameId === gameId ||
+      const isPlayer = connection.currentGameId === gameId ||
                        (connection.user && (connection.user.id === game.whiteId || connection.user.id === game.blackId));
+      
+      // Check if connection is spectating this game
+      const isSpectating = connection.spectatingGames.has(gameId);
+      
+      const isInGame = isPlayer || isSpectating;
 
       if (isInGame &&
           connection.user &&
@@ -1666,10 +1694,11 @@ export class SimpleRealtimeServer {
           ws.readyState === WebSocket.OPEN) {
         ws.send(JSON.stringify(message));
         sentCount++;
-        console.log(`[SEND] Sent ${message.t} to ${connection.user.handle} (${connection.user.id})`);
+        const role = isPlayer ? 'player' : 'spectator';
+        console.log(`[SEND] Sent ${message.t} to ${role} ${connection.user.handle} (${connection.user.id})`);
       }
     }
-    console.log(`[SEND] Broadcast ${message.t} to ${sentCount} players in game ${gameId}`);
+    console.log(`[SEND] Broadcast ${message.t} to ${sentCount} connections in game ${gameId}`);
   }
 
   // Helper method to broadcast to tournament players
@@ -1752,6 +1781,90 @@ export class SimpleRealtimeServer {
     console.log('[REDIS] Team tournament subscriptions set up');
   }
 
+  private async handleGameSpectate(connection: ClientConnection, message: any) {
+    if (!connection.user) {
+      this.sendError(connection, 'UNAUTHORIZED', 'User not authenticated');
+      return;
+    }
+
+    const gameId = message.gameId;
+    if (!gameId) {
+      this.sendError(connection, 'INVALID_MESSAGE', 'Game ID is required');
+      return;
+    }
+
+    const game = this.gameManager.getGame(gameId);
+    if (!game) {
+      this.sendError(connection, 'GAME_NOT_FOUND', 'Game not found');
+      return;
+    }
+
+    // Check if user is a player in the game
+    if (connection.user.id === game.whiteId || connection.user.id === game.blackId) {
+      this.sendError(connection, 'INVALID_REQUEST', 'You are a player in this game');
+      return;
+    }
+
+    // Check if game has ended
+    if (game.ended) {
+      this.sendError(connection, 'GAME_ENDED', 'Game has already ended');
+      return;
+    }
+
+    // Add to spectating games
+    connection.spectatingGames.add(gameId);
+    console.log(`[SPECTATE] User ${connection.user.handle} (${connection.user.id}) started spectating game ${gameId}`);
+
+    // Send current game state to spectator
+    const gameState: any = {
+      t: 'game.state',
+      gameId: game.id,
+      whiteId: game.whiteId,
+      blackId: game.blackId,
+      moves: game.moves || [],
+      timeLeft: game.timeLeft,
+      toMove: game.toMove,
+      tc: game.tc,
+      chess960Position: game.chess960Position,
+      initialFen: game.initialFen,
+      result: game.result,
+      ended: game.ended,
+    };
+
+    this.sendMessage(connection, gameState);
+
+    // Send confirmation
+    this.sendMessage(connection, {
+      t: 'game.spectating',
+      gameId,
+      success: true,
+    });
+  }
+
+  private async handleGameUnspectate(connection: ClientConnection, message: any) {
+    if (!connection.user) {
+      this.sendError(connection, 'UNAUTHORIZED', 'User not authenticated');
+      return;
+    }
+
+    const gameId = message.gameId;
+    if (!gameId) {
+      this.sendError(connection, 'INVALID_MESSAGE', 'Game ID is required');
+      return;
+    }
+
+    // Remove from spectating games
+    connection.spectatingGames.delete(gameId);
+    console.log(`[SPECTATE] User ${connection.user.handle} (${connection.user.id}) stopped spectating game ${gameId}`);
+
+    // Send confirmation
+    this.sendMessage(connection, {
+      t: 'game.unspectating',
+      gameId,
+      success: true,
+    });
+  }
+
   private async validateSession(sessionId: string): Promise<User | null> {
     try {
       console.log('[DEBUG] Validating session with token:', sessionId.substring(0, 20) + '...');
@@ -1808,6 +1921,47 @@ export class SimpleRealtimeServer {
         handle: `Guest${Math.random().toString(36).substr(2, 6)}`,
       };
       return guestUser;
+    }
+  }
+
+  private async persistGameStart(game: any) {
+    try {
+      // Convert to format expected by persistence service
+      const gameState = {
+        id: game.id,
+        whiteId: game.whiteId,
+        blackId: game.blackId,
+        whiteConnection: null,
+        blackConnection: null,
+        tc: game.tc,
+        chess960Position: game.chess960Position,
+        initialFen: game.initialFen,
+        moves: game.moves || [],
+        timeLeft: {
+          white: game.timeLeft?.w || 0,
+          black: game.timeLeft?.b || 0,
+        },
+        increment: {
+          white: 0,
+          black: 0,
+        },
+        toMove: game.toMove || 'white',
+        drawOffer: null,
+        takebackOffer: null,
+        result: null,
+        ended: false,
+        startedAt: game.startedAt?.getTime() || Date.now(),
+        lastMoveAt: Date.now(),
+        clockStartedFor: {
+          white: false,
+          black: false,
+        },
+      };
+
+      await this.persistenceService.persistGameStart(gameState);
+      console.log(`[OK] Game ${game.id} persisted as live game`);
+    } catch (error) {
+      console.error(`[ERR] Failed to persist game start ${game.id}:`, error);
     }
   }
 

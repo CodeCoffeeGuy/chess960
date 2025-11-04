@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.10.0",
+    "@chess960/board": "workspace:*",
     "@chess960/db": "workspace:*",
     "@chess960/proto": "workspace:*",
     "@chess960/redis-client": "workspace:*",
