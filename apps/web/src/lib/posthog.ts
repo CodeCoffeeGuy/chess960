@@ -2,44 +2,71 @@ import posthog from 'posthog-js'
 
 // Client-side PostHog initialization
 export const initPosthog = () => {
-  if (typeof window !== 'undefined' && process.env.NEXT_PUBLIC_POSTHOG_KEY) {
+  if (typeof window === 'undefined') return;
+  
+  if (!process.env.NEXT_PUBLIC_POSTHOG_KEY) {
+    if (process.env.NODE_ENV === 'development') {
+      console.warn('PostHog key not found - analytics disabled');
+    }
+    return;
+  }
+
+  try {
     posthog.init(process.env.NEXT_PUBLIC_POSTHOG_KEY, {
       api_host: process.env.NEXT_PUBLIC_POSTHOG_HOST || 'https://us.i.posthog.com',
       person_profiles: 'identified_only',
       capture_pageview: false, // We handle pageviews manually
       capture_pageleave: true,
-      // Session recording
-      session_recording: {
-        recordCrossOriginIframes: false, // Set to true if you have iframes from the same origin
-        maskAllInputs: true, // Mask all input fields by default (sensitive data)
-        maskTextSelector: '[data-private]', // Also mask elements with data-private attribute
-        // Don't mask these inputs if you want to see them in recordings
-        // maskAllInputs: false,
-        // maskInputOptions: {
-        //   password: true, // Always mask passwords
-        //   email: true,    // Mask email inputs
-        // }
-      },
+      // Session recording - disabled in production to prevent connection errors
+      // Re-enable once PostHog session recording is properly configured
+      session_recording: process.env.NODE_ENV === 'production' 
+        ? {
+            enabled: false, // Disable in production to prevent lazy-recorder.js connection errors
+          }
+        : {
+            recordCrossOriginIframes: false,
+            maskAllInputs: true,
+            maskTextSelector: '[data-private]',
+          },
       loaded: (_posthog) => {
         if (process.env.NODE_ENV === 'development') {
-          console.log('PostHog loaded')
+          console.log('PostHog loaded');
         }
-      }
-    })
+      },
+      // Catch errors during initialization
+      _capture_metrics: false, // Disable internal metrics to reduce errors
+    });
+  } catch (error) {
+    console.error('PostHog initialization failed:', error);
+    // Don't crash the app if PostHog fails to initialize
   }
 }
 
 // User identification
 export const identifyUser = (userId: string, properties?: Record<string, any>) => {
-  if (typeof window !== 'undefined') {
-    posthog.identify(userId, properties)
+  if (typeof window === 'undefined') return;
+  
+  try {
+    if (posthog.__loaded) {
+      posthog.identify(userId, properties);
+    }
+  } catch (error) {
+    console.error('PostHog identify error:', error);
+    // Don't crash the app if PostHog fails
   }
 }
 
 // Track events
 export const trackEvent = (eventName: string, properties?: Record<string, any>) => {
-  if (typeof window !== 'undefined') {
-    posthog.capture(eventName, properties)
+  if (typeof window === 'undefined') return;
+  
+  try {
+    if (posthog.__loaded) {
+      posthog.capture(eventName, properties);
+    }
+  } catch (error) {
+    console.error('PostHog capture error:', error);
+    // Don't crash the app if PostHog fails
   }
 }
 
@@ -66,9 +93,16 @@ export const trackUserSignIn = (userId: string, handle: string, isNewUser: boole
 }
 
 export const trackUserSignOut = () => {
-  trackEvent('user_signed_out')
+  trackEvent('user_signed_out');
   if (typeof window !== 'undefined') {
-    posthog.reset()
+    try {
+      if (posthog.__loaded) {
+        posthog.reset();
+      }
+    } catch (error) {
+      console.error('PostHog reset error:', error);
+      // Don't crash the app if PostHog fails
+    }
   }
 }
 

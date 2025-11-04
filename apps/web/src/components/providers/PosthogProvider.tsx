@@ -10,15 +10,24 @@ function PosthogTracker() {
   const searchParams = useSearchParams()
 
   useEffect(() => {
-    // Track pageviews
+    // Track pageviews with error handling
     if (pathname && typeof window !== 'undefined') {
-      let url = window.origin + pathname
-      if (searchParams.toString()) {
-        url = url + `?${searchParams.toString()}`
+      try {
+        let url = window.origin + pathname
+        if (searchParams.toString()) {
+          url = url + `?${searchParams.toString()}`
+        }
+        
+        // Only track if PostHog is loaded
+        if (posthog.__loaded) {
+          posthog.capture('$pageview', {
+            $current_url: url
+          })
+        }
+      } catch (error) {
+        console.error('PostHog pageview tracking error:', error);
+        // Don't crash the app if PostHog fails
       }
-      posthog.capture('$pageview', {
-        $current_url: url
-      })
     }
   }, [pathname, searchParams])
 
@@ -27,8 +36,13 @@ function PosthogTracker() {
 
 export function PosthogProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
-    // Initialize PostHog
-    initPosthog()
+    // Initialize PostHog with error handling
+    try {
+      initPosthog()
+    } catch (error) {
+      console.error('PostHog provider initialization error:', error);
+      // Don't crash the app if PostHog fails to initialize
+    }
   }, [])
 
   return (
