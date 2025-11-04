@@ -119,7 +119,7 @@ export default function HomePageClient() {
         {/* Time Controls - Category First */}
         <div className="mt-8 sm:mt-10 md:mt-12 max-w-4xl mx-auto">
           {/* Speed Categories */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-12">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-0">
             {/* Bullet */}
             <button
               onClick={() => {
@@ -182,7 +182,7 @@ export default function HomePageClient() {
       </div>
 
       {/* Featured Live Games */}
-      <div className="relative">
+      <div className="relative -mt-28">
         <FeaturedLiveGames />
       </div>
 

@@ -36,7 +36,7 @@ function GameBoardPreview({ initialFen, moves }: { initialFen?: string; moves: s
     <Chess960Board
       fen={currentFen}
       orientation="white"
-      width={280}
+      width={360}
       readOnly={true}
       showCoordinates={false}
       theme={boardTheme}
@@ -263,18 +263,18 @@ export function FeaturedLiveGames() {
   // The placeholder boards should still show
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8">
+    <div className="max-w-7xl mx-auto px-4 pt-0 pb-4">
       {error && (
-        <div className="text-center text-red-400 mb-6">
+        <div className="text-center text-red-400 mb-3">
           <p className="text-sm">{error}</p>
         </div>
       )}
       {!error && games.length === 0 && (
-        <div className="text-center text-[#a0958a] light:text-[#5a5449] mb-6">
+        <div className="text-center text-[#a0958a] light:text-[#5a5449] mb-3">
           <p className="text-sm">No live games available at the moment</p>
         </div>
       )}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {displayGames.map((game, gameIndex) => {
           // Handle placeholder games
           if ((game as any).isPlaceholder) {
@@ -322,7 +322,7 @@ export function FeaturedLiveGames() {
                     <Chess960Board
                       fen={(game as any).position?.fen ?? 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'}
                       orientation="white"
-                      width={280}
+                      width={360}
                       readOnly={true}
                       showCoordinates={false}
                       theme={boardTheme}
