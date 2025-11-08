@@ -158,8 +158,9 @@ export function Chess960Board({
     setInternalWidth(width);
   }, [width]);
   
-  // Use external selectedSquare if provided, otherwise use internal state
-  const selectedSquare = externalSelectedSquare !== undefined ? externalSelectedSquare : internalSelectedSquare;
+  // Use external selectedSquare for hints/display, but allow internal selection for user clicks
+  // If user has selected a piece internally, use that; otherwise use external (for hints)
+  const selectedSquare = internalSelectedSquare !== null ? internalSelectedSquare : (externalSelectedSquare !== undefined ? externalSelectedSquare : null);
   
   // Determine if drag should be enabled based on moveInputMode
   const isDragEnabled = moveInputMode === 'drag' || moveInputMode === 'both';
@@ -572,7 +573,10 @@ export function Chess960Board({
       return; // Right-click is handled separately in handleRightClick
     }
     
-    if (readOnly || !onMove) return;
+    if (readOnly) return;
+    
+    // Allow piece selection even if onMove is undefined (for read-only viewing)
+    // Only require onMove when actually making a move
     
     // Clear right-click hover destinations on left click
     setRightClickHoverSquare(null);
@@ -601,6 +605,20 @@ export function Chess960Board({
     if (selectedSquare) {
       // Try to make a move
       if (selectedSquare !== square) {
+        // Check if onMove is available - if not, just allow selection changes
+        if (!onMove) {
+          // No move handler - just allow selection changes
+          const newPiece = boardState[rank]?.[file];
+          if (newPiece) {
+            // Try selecting the clicked piece instead
+            setInternalSelectedSquare(square);
+          } else {
+            // Clicked empty square - clear selection
+            setInternalSelectedSquare(null);
+          }
+          return;
+        }
+        
         // ALWAYS validate move with chess.js - don't trust effectiveLegalMoves alone
         try {
           const testChess = new Chess(chess.fen());
@@ -611,14 +629,10 @@ export function Chess960Board({
             const newPiece = boardState[rank]?.[file];
             if (newPiece) {
               // Try selecting the clicked piece instead
-              if (externalSelectedSquare === undefined) {
-                setInternalSelectedSquare(square);
-              }
+              setInternalSelectedSquare(square);
             } else {
               // Clicked empty square - clear selection
-              if (externalSelectedSquare === undefined) {
-                setInternalSelectedSquare(null);
-              }
+              setInternalSelectedSquare(null);
             }
             return;
           }
@@ -663,39 +677,29 @@ export function Chess960Board({
             setPremoves(prev => [...prev, { from: selectedSquare, to: square }]);
             
             // Clear selection after storing premove
-            if (externalSelectedSquare === undefined) {
-              setInternalSelectedSquare(null);
-            }
+            setInternalSelectedSquare(null);
           } else {
             // Regular move - call onMove immediately
             onMove(selectedSquare, square, promotion);
             
             // Clear selection after move
-            if (externalSelectedSquare === undefined) {
-              setInternalSelectedSquare(null);
-            }
+            setInternalSelectedSquare(null);
           }
         } catch (error) {
           // Invalid move - deselect or select new piece
           const newPiece = boardState[rank]?.[file];
           if (newPiece) {
             // Try selecting the clicked piece instead
-            if (externalSelectedSquare === undefined) {
-              setInternalSelectedSquare(square);
-            }
+            setInternalSelectedSquare(square);
           } else {
             // Clicked empty square - clear selection
-            if (externalSelectedSquare === undefined) {
-              setInternalSelectedSquare(null);
-            }
+            setInternalSelectedSquare(null);
           }
           return;
         }
       } else {
         // Clicked same square - deselect
-        if (externalSelectedSquare === undefined) {
-          setInternalSelectedSquare(null);
-        }
+        setInternalSelectedSquare(null);
       }
     } else {
       // Select a piece (or start premove)
@@ -742,12 +746,10 @@ export function Chess960Board({
                            (!isKingside && !isKingSide && move.flags?.includes('q'));
                   });
                   
-                  if (castleMove) {
+                  if (castleMove && onMove) {
                     playSound('castle');
                     onMove(kingSquare, castleMove.to);
-                    if (externalSelectedSquare === undefined) {
-                      setInternalSelectedSquare(null);
-                    }
+                    setInternalSelectedSquare(null);
                     return;
                   }
                 }
@@ -768,15 +770,13 @@ export function Chess960Board({
         
         if (canSelect) {
           // Select the piece - this shows destinations even for premoves
-          if (externalSelectedSquare === undefined) {
-            setInternalSelectedSquare(square);
-          }
+          // Always allow internal selection - external selectedSquare is just for hints/display
+          setInternalSelectedSquare(square);
         }
       } else {
         // Clicked empty square - clear selection
-        if (externalSelectedSquare === undefined) {
-          setInternalSelectedSquare(null);
-        }
+        // Always allow clearing internal selection
+        setInternalSelectedSquare(null);
       }
     }
   }, [readOnly, onMove, selectedSquare, rankFileToSquare, boardState, effectiveLegalMoves, externalSelectedSquare, rookCastle, currentPlayerColor, chess, playSound, isClickEnabled, eraseArrowsOnClick, arrows, onArrowsChange, enablePremove]);
@@ -879,12 +879,11 @@ export function Chess960Board({
     // Only handle single touch
     if (e.type === 'touchstart' && (e as React.TouchEvent).touches.length > 1) return;
     
+    // Only set up drag tracking if drag is enabled
+    // If drag is disabled, clicks will be handled by onClick handlers
     if (readOnly || !isDragEnabled) {
       return;
     }
-
-    // Don't prevent default or stop propagation - let clicks pass through to square
-    // This allows click-to-move to work naturally
 
     const square = rankFileToSquare(rank, file);
     const piece = boardState[rank]?.[file];
@@ -1225,7 +1224,7 @@ export function Chess960Board({
       // Check if mouse has moved enough to be considered a drag (not a click)
       const dx = Math.abs(e.clientX - dragStartPosRef.current.x);
       const dy = Math.abs(e.clientY - dragStartPosRef.current.y);
-      const dragThreshold = 5; // pixels
+      const dragThreshold = 3; // pixels - lower threshold for better responsiveness
       
       if (dx > dragThreshold || dy > dragThreshold) {
         // Mouse moved - this is a drag, not a click
@@ -1239,6 +1238,10 @@ export function Chess960Board({
         
         // Prevent default only when actually dragging
         e.preventDefault();
+      } else {
+        // Mouse hasn't moved enough - this is still a potential click
+        // Don't set hasMovedRef yet - wait for mouseup to confirm
+        // This allows onClick to fire for clicks
       }
       
       // Only update ghost piece if we're actually dragging (mouse moved)
@@ -1336,26 +1339,39 @@ export function Chess960Board({
       const hadDragStart = dragStartPosRef.current !== null;
       const hadDraggedPieceState = draggedPiece !== null;
       
-      // If this was just a click (no drag state set, mouse didn't move)
-      // Clear refs in next tick to allow onClick to fire first
-      if (!hadDraggedPieceState && hadDragStart && !hadMoved) {
+      // If mouse didn't move enough, this was a click, not a drag
+      // Clear all drag tracking refs immediately so onClick handlers can process it
+      if (draggedPieceRef.current && !hasMovedRef.current) {
         // Check threshold to confirm it's a click
         if (dragStartPosRef.current) {
           const dx = Math.abs(clientX - dragStartPosRef.current.x);
           const dy = Math.abs(clientY - dragStartPosRef.current.y);
-          const clickThreshold = 5; // pixels
+          const clickThreshold = 3; // pixels - match dragThreshold
           
           if (dx < clickThreshold && dy < clickThreshold) {
-            // This was definitely a click - clear refs after onClick has a chance to fire
-            // Use setTimeout to allow the React onClick event to fire first
-            setTimeout(() => {
-              dragStartPosRef.current = null;
-              hasMovedRef.current = false;
-              draggedPieceRef.current = null;
-            }, 0);
+            // This was definitely a click - clear refs immediately
+            // onClick handlers will process the click
+            dragStartPosRef.current = null;
+            hasMovedRef.current = false;
+            draggedPieceRef.current = null;
             return;
           }
+        } else {
+          // No drag start position but ref is set - clear it
+          dragStartPosRef.current = null;
+          hasMovedRef.current = false;
+          draggedPieceRef.current = null;
+          return;
         }
+      }
+      
+      // Also handle case where we had drag start but no movement and no draggedPiece state
+      if (hadDragStart && !hadMoved && !hadDraggedPieceState) {
+        // This was a click - clear refs
+        dragStartPosRef.current = null;
+        hasMovedRef.current = false;
+        draggedPieceRef.current = null;
+        return;
       }
 
       // This was a drag - check if we have a dragged piece
@@ -1955,7 +1971,7 @@ export function Chess960Board({
                   cursor: readOnly 
                     ? 'default' 
                     : piece 
-                      ? (isDragEnabled ? 'grab' : (isClickEnabled ? 'pointer' : 'default'))
+                      ? (isClickEnabled ? 'pointer' : (isDragEnabled ? 'grab' : 'default'))
                       : (isClickEnabled && isLegalMove ? 'pointer' : 'default'),
                   position: 'absolute',
                   userSelect: 'none',
@@ -1967,14 +1983,20 @@ export function Chess960Board({
                     return;
                   }
                   
-                  // Handle click on square - this is where clicks are handled
-                  // Clicks are always handled at the square level, even when clicking on a piece
+                  // If click came from a piece (event target is the piece div or its children),
+                  // let the piece's onClick handle it instead
+                  const target = e.target as HTMLElement;
+                  if (target.closest('.piece-container') || target.closest('[data-piece-click]')) {
+                    // Let piece's onClick handle it
+                    return;
+                  }
                   
-                  // Check if this was actually a drag - if so, ignore the click
-                  // CRITICAL: Check refs directly since state updates are async
-                  const wasDrag = draggedPieceRef.current !== null && hasMovedRef.current;
+                  // Handle click on empty square or if piece click didn't handle it
+                  // CRITICAL: Only block if mouse actually moved (it was a drag, not a click)
+                  // If hasMovedRef is false, it means mouse didn't move enough - it's a click, allow it
+                  const wasDrag = hasMovedRef.current && draggedPieceRef.current !== null;
                   
-                  // If it was a drag, don't handle click
+                  // If it was a drag, don't handle click (drag was already handled in mouseup)
                   if (wasDrag) {
                     // Clear drag refs since drag is complete
                     draggedPieceRef.current = null;
@@ -1983,7 +2005,8 @@ export function Chess960Board({
                     return;
                   }
                   
-                  // Clear any drag refs that might be lingering (from a click, not drag)
+                  // This was a click (not a drag) - clear any drag tracking refs
+                  // and process the click normally
                   draggedPieceRef.current = null;
                   dragStartPosRef.current = null;
                   hasMovedRef.current = false;
@@ -2090,23 +2113,72 @@ export function Chess960Board({
                   
                   return (
                     <div
-                      className="w-full h-full flex items-center justify-center"
+                      className="w-full h-full flex items-center justify-center piece-container"
+                      data-piece-click="true"
                       onMouseDown={(e) => {
-                        // Use mouse down to start drag
-                        // KEY: Don't prevent default or stop propagation - let clicks pass to square
-                        // Clicks are handled by squares, not pieces
+                        // Only set up drag tracking if drag is enabled
+                        // If only click is enabled, don't interfere with click handling
                         if (pieceDraggable && e.button === 0) {
                           handlePieceMouseDown(e, actualRank, actualFile);
-                          // Don't prevent default - let click event fire normally
-                          // The square will handle the click if it's not a drag
+                          // Don't prevent default - allow click event to fire
                         } else if (e.button === 2) {
                           e.preventDefault(); // Prevent context menu on right click
                         }
+                        // Don't prevent default or stop propagation - let clicks work normally
+                        // The onClick handler will determine if it was a click or drag
                       }}
-                      // No onClick on piece - let clicks bubble to square
-                      // Standard drag-and-drop behavior
+                      onClick={(e) => {
+                        // Handle clicks on pieces when click mode is enabled
+                        // Allow clicks even if onMove is undefined (for piece selection)
+                        if (readOnly || !isClickEnabled) {
+                          return;
+                        }
+                        if ((e as React.MouseEvent).button === 2) {
+                          return;
+                        }
+                        
+                        // CRITICAL: If mouse didn't move, it's definitely a click
+                        // hasMovedRef is only set to true when mouse actually moves during drag
+                        if (hasMovedRef.current) {
+                          // Mouse moved - this was a drag, not a click
+                          draggedPieceRef.current = null;
+                          dragStartPosRef.current = null;
+                          hasMovedRef.current = false;
+                          return;
+                        }
+                        
+                        // Verify by checking distance if we have drag start position
+                        if (dragStartPosRef.current) {
+                          const currentX = (e as React.MouseEvent).clientX;
+                          const currentY = (e as React.MouseEvent).clientY;
+                          const dx = Math.abs(currentX - dragStartPosRef.current.x);
+                          const dy = Math.abs(currentY - dragStartPosRef.current.y);
+                          const clickThreshold = 5;
+                          
+                          if (dx >= clickThreshold || dy >= clickThreshold) {
+                            // Mouse moved too much - this was a drag
+                            draggedPieceRef.current = null;
+                            dragStartPosRef.current = null;
+                            hasMovedRef.current = false;
+                            return;
+                          }
+                        }
+                        
+                        // This was definitely a click (not a drag) - process it immediately
+                        // Clear any drag tracking refs that might have been set
+                        draggedPieceRef.current = null;
+                        dragStartPosRef.current = null;
+                        hasMovedRef.current = false;
+                        
+                        // CRITICAL: Stop propagation to prevent square's onClick from also firing
+                        e.stopPropagation();
+                        e.preventDefault();
+                        
+                        // Handle the click directly - this selects the piece or makes a move
+                        handleSquareClick(actualRank, actualFile, e);
+                      }}
                       style={{
-                        cursor: readOnly ? 'default' : isDragEnabled ? 'grab' : (isClickEnabled ? 'pointer' : 'default'),
+                        cursor: readOnly ? 'default' : (isClickEnabled ? 'pointer' : (isDragEnabled ? 'grab' : 'default')),
                         pointerEvents: readOnly ? 'none' : 'auto',
                         userSelect: 'none',
                         WebkitUserSelect: 'none',
