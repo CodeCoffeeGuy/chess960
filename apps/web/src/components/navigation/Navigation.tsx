@@ -10,6 +10,7 @@ import { useSession, signOut } from 'next-auth/react';
 import { NotificationDropdown } from '@/components/notifications/NotificationDropdown';
 import { TimeControlModal } from '@/components/game/TimeControlModal';
 import { GuestSettings } from '@/components/guest/GuestSettings';
+import { getUserContextFromCookies } from '@chess960/utils';
 
 interface NavigationUser {
   id: string;
@@ -129,7 +130,7 @@ export function Navigation() {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  // Update user state from session
+  // Update user state from session and auth-token cookie
   useEffect(() => {
     if (session?.user) {
       const sessionUser = session.user as any;
@@ -148,7 +149,19 @@ export function Navigation() {
         });
       }
     } else {
-      setUser(null);
+      // If no NextAuth session, check for guest token
+      const cookieContext = getUserContextFromCookies();
+      if (cookieContext.userId && cookieContext.type === 'guest') {
+        // User is a guest
+        setUser({
+          id: cookieContext.userId,
+          handle: cookieContext.username || 'Guest',
+          email: '',
+        });
+      } else {
+        // No session and no guest token
+        setUser(null);
+      }
     }
   }, [session]);
 

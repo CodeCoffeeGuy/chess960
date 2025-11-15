@@ -2,22 +2,72 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import { GuestProfile } from '@/components/guest/GuestProfile';
 import { getUserContextFromCookies, clearAuthToken, GHOST_USERNAME } from '@chess960/utils';
 
 export default function GuestProfilePage() {
   const router = useRouter();
+  const { data: session, status } = useSession();
   const [userContext, setUserContext] = useState<{ isAuth: boolean; username?: string; type?: string } | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Wait for session to load before checking
+    if (status === 'loading') {
+      return;
+    }
     checkUserStatus();
-  }, []);
+  }, [status, session]);
 
   const checkUserStatus = async () => {
     try {
       // Get user context from cookies
       const context = getUserContextFromCookies();
+
+      // If NextAuth session exists, user is authenticated - redirect to their profile
+      if (session?.user) {
+        const sessionUser = session.user as any;
+        if (sessionUser.handle) {
+          router.push(`/profile/${sessionUser.handle}`);
+          return;
+        }
+      }
+
+      // If cookie says user is authenticated but NextAuth says no session,
+      // the token is stale - clear it and create guest token
+      if (context.isAuth && !session?.user) {
+        console.log('Stale auth token detected (cookie says auth but no NextAuth session), clearing and creating guest token');
+        clearAuthToken();
+        // Create a new guest token
+        try {
+          const response = await fetch('/api/auth/guest-simple', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          });
+
+          if (response.ok) {
+            console.log('Guest token created after clearing stale auth token');
+            await new Promise(resolve => setTimeout(resolve, 100));
+            const newContext = getUserContextFromCookies();
+            setUserContext(newContext);
+            setLoading(false);
+            return;
+          } else {
+            console.error('Failed to create guest token after clearing stale auth token');
+            setUserContext({ isAuth: false, type: 'guest' });
+            setLoading(false);
+            return;
+          }
+        } catch (error) {
+          console.error('Error creating guest token after clearing stale auth token:', error);
+          setUserContext({ isAuth: false, type: 'guest' });
+          setLoading(false);
+          return;
+        }
+      }
 
       // If user is authenticated (has a real account), redirect to user profile
       if (context.isAuth) {

@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
-import { UserPlus, Check, MessageSquare } from 'lucide-react';
+import { UserPlus, Check, MessageSquare, BarChart3 } from 'lucide-react';
+import Link from 'next/link';
 import { UserActivity } from '@/components/profile/UserActivity';
 import { GameHistory } from '@/components/profile/GameHistory';
 import { ChallengeButton } from '@/components/profile/ChallengeButton';
@@ -113,6 +114,9 @@ export default function ProfilePageClient() {
   useEffect(() => {
     window.scrollTo(0, 0);
     setShowContent(false); // Reset fade-in for new profile
+    setStats(null); // Clear previous stats
+    setLoading(true); // Reset loading state
+    setError(''); // Clear any errors
     fetchUserStats();
   }, [username]);
 
@@ -121,6 +125,16 @@ export default function ProfilePageClient() {
       checkFollowStatus();
     }
   }, [stats?.id, session?.user]);
+
+  // Clear stats when session changes (e.g., after logout)
+  useEffect(() => {
+    if (!session?.user) {
+      // If user logged out, clear stats to prevent showing stale data
+      setStats(null);
+      setLoading(true);
+      setError('');
+    }
+  }, [session]);
 
   // Real-time updates for profile data
   const handleProfileUpdate = (update: any) => {
@@ -456,6 +470,17 @@ export default function ProfilePageClient() {
             <div className="text-xs sm:text-sm text-[#a0958a] light:text-[#5a5449] mb-1 sm:mb-2">Win Rate</div>
             <div className="text-xl sm:text-2xl md:text-3xl font-bold text-orange-400">{winRate}%</div>
           </div>
+        </div>
+
+        {/* Puzzle Dashboard Link */}
+        <div className="mb-4 sm:mb-6">
+          <Link
+            href="/puzzle/dashboard"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-orange-400 hover:bg-orange-500 text-black rounded-lg font-medium transition-colors"
+          >
+            <BarChart3 className="w-4 h-4" />
+            View Puzzle Dashboard
+          </Link>
         </div>
 
         {/* Game History */}
