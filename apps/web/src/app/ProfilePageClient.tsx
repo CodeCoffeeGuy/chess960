@@ -9,7 +9,6 @@ import { UserActivity } from '@/components/profile/UserActivity';
 import { GameHistory } from '@/components/profile/GameHistory';
 import { ChallengeButton } from '@/components/profile/ChallengeButton';
 import { RatingGraph } from '@/components/profile/RatingGraph';
-import { PuzzleHistory } from '@/components/profile/PuzzleHistory';
 import { useProfileWebSocket } from '@/hooks/useProfileWebSocket';
 
 interface UserStats {
@@ -579,7 +578,6 @@ export default function ProfilePageClient() {
 
         {/* Puzzle History */}
         <div className="mb-4 sm:mb-6 md:mb-8">
-          <PuzzleHistory key={`puzzle-history-${refreshKey}`} userId={stats.id} username={stats.handle} />
         </div>
 
         {/* Game History */}
