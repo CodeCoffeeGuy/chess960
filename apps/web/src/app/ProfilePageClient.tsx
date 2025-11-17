@@ -576,10 +576,6 @@ export default function ProfilePageClient() {
           </Link>
         </div>
 
-        {/* Puzzle History */}
-        <div className="mb-4 sm:mb-6 md:mb-8">
-        </div>
-
         {/* Game History */}
         <div className="mb-4 sm:mb-6 md:mb-8">
           <GameHistory key={`history-${refreshKey}`} userId={stats.id} username={stats.handle} />
