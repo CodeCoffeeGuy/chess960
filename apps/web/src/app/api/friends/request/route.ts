@@ -22,6 +22,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Cannot send friend request to yourself' }, { status: 400 });
     }
 
+    // Check if user is blocked
+    const isBlocked = await prisma.block.findFirst({
+      where: {
+        OR: [
+          { blockerId: session.user.id, blockedId: userId },
+          { blockerId: userId, blockedId: session.user.id },
+        ],
+      },
+    });
+
+    if (isBlocked) {
+      return NextResponse.json({ error: 'Cannot send friend request to this user' }, { status: 403 });
+    }
+
     // Check if target user exists and allows friend requests
     const targetUser = await prisma.user.findUnique({
       where: { id: userId },

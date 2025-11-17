@@ -40,6 +40,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'This user is not accepting messages' }, { status: 403 });
     }
 
+    // Check if user is blocked
+    const isBlocked = await prisma.block.findFirst({
+      where: {
+        OR: [
+          { blockerId: session.user.id, blockedId: receiverId },
+          { blockerId: receiverId, blockedId: session.user.id },
+        ],
+      },
+    });
+
+    if (isBlocked) {
+      return NextResponse.json({ error: 'Cannot message this user' }, { status: 403 });
+    }
+
     // Check if user is following the receiver
     const isFollowing = await prisma.follow.findUnique({
       where: {

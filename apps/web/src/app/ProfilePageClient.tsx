@@ -3,12 +3,13 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
-import { UserPlus, Check, MessageSquare, BarChart3 } from 'lucide-react';
+import { UserPlus, Check, MessageSquare, BarChart3, Ban, UserX } from 'lucide-react';
 import Link from 'next/link';
 import { UserActivity } from '@/components/profile/UserActivity';
 import { GameHistory } from '@/components/profile/GameHistory';
 import { ChallengeButton } from '@/components/profile/ChallengeButton';
 import { RatingGraph } from '@/components/profile/RatingGraph';
+import { PuzzleHistory } from '@/components/profile/PuzzleHistory';
 import { useProfileWebSocket } from '@/hooks/useProfileWebSocket';
 
 interface UserStats {
@@ -107,6 +108,8 @@ export default function ProfilePageClient() {
   const [error, setError] = useState('');
   const [isFollowing, setIsFollowing] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
+  const [isBlocked, setIsBlocked] = useState(false);
+  const [blockLoading, setBlockLoading] = useState(false);
   const [selectedSpeed, setSelectedSpeed] = useState<'bullet' | 'blitz' | 'rapid' | 'classical'>('bullet');
   const [showContent, setShowContent] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -123,6 +126,7 @@ export default function ProfilePageClient() {
   useEffect(() => {
     if (stats?.id && session?.user) {
       checkFollowStatus();
+      checkBlockStatus();
     }
   }, [stats?.id, session?.user]);
 
@@ -181,6 +185,73 @@ export default function ProfilePageClient() {
       }
     } catch (error) {
       console.error('Failed to check follow status:', error);
+    }
+  };
+
+  const checkBlockStatus = async () => {
+    if (!session?.user || !stats?.id) return;
+
+    try {
+      const response = await fetch(`/api/block?userId=${stats.id}`);
+      if (response.ok) {
+        const data = await response.json();
+        setIsBlocked(data.isBlocked);
+      }
+    } catch (error) {
+      console.error('Failed to check block status:', error);
+    }
+  };
+
+  const handleBlockToggle = async () => {
+    if (!stats?.id || blockLoading) return;
+
+    setBlockLoading(true);
+    try {
+      if (isBlocked) {
+        // Unblock
+        const response = await fetch('/api/block', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: stats.id }),
+        });
+
+        if (response.ok) {
+          setIsBlocked(false);
+        } else {
+          const error = await response.json();
+          console.error('Unblock failed:', error);
+          alert(error.error || 'Failed to unblock');
+        }
+      } else {
+        // Block
+        const confirmed = window.confirm(
+          `Are you sure you want to block ${stats.handle}? You won't be able to message, challenge, or be matched with them.`
+        );
+        if (!confirmed) {
+          setBlockLoading(false);
+          return;
+        }
+
+        const response = await fetch('/api/block', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: stats.id }),
+        });
+
+        if (response.ok) {
+          setIsBlocked(true);
+          setIsFollowing(false); // Unfollow when blocking
+        } else {
+          const error = await response.json();
+          console.error('Block failed:', error);
+          alert(error.error || 'Failed to block');
+        }
+      }
+    } catch (error) {
+      console.error('Block toggle error:', error);
+      alert('An error occurred');
+    } finally {
+      setBlockLoading(false);
     }
   };
 
@@ -332,7 +403,7 @@ export default function ProfilePageClient() {
                   {followLoading ? 'Loading...' : isFollowing ? 'Following' : 'Follow'}
                 </button>
 
-                {isFollowing && (
+                {isFollowing && !isBlocked && (
                   <a
                     href="/messages"
                     className="flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 text-sm sm:text-base bg-gradient-to-r from-orange-300 to-orange-400 hover:from-orange-600 hover:to-red-700 text-white rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl"
@@ -341,6 +412,29 @@ export default function ProfilePageClient() {
                     Message
                   </a>
                 )}
+
+                <button
+                  onClick={handleBlockToggle}
+                  disabled={blockLoading}
+                  className={`flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 text-sm sm:text-base text-white rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl ${
+                    isBlocked
+                      ? 'bg-red-600 hover:bg-red-700'
+                      : 'bg-gray-600 hover:bg-gray-700'
+                  } disabled:bg-gray-600 disabled:cursor-not-allowed`}
+                  title={isBlocked ? 'Unblock this user' : 'Block this user'}
+                >
+                  {isBlocked ? (
+                    <>
+                      <UserX className="h-4 w-4 sm:h-5 sm:w-5" />
+                      Unblock
+                    </>
+                  ) : (
+                    <>
+                      <Ban className="h-4 w-4 sm:h-5 sm:w-5" />
+                      Block
+                    </>
+                  )}
+                </button>
               </div>
             )}
           </div>
@@ -481,6 +575,11 @@ export default function ProfilePageClient() {
             <BarChart3 className="w-4 h-4" />
             View Puzzle Dashboard
           </Link>
+        </div>
+
+        {/* Puzzle History */}
+        <div className="mb-4 sm:mb-6 md:mb-8">
+          <PuzzleHistory key={`puzzle-history-${refreshKey}`} userId={stats.id} username={stats.handle} />
         </div>
 
         {/* Game History */}

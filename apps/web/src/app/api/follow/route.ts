@@ -22,6 +22,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Cannot follow yourself' }, { status: 400 });
     }
 
+    // Check if user is blocked
+    const isBlocked = await prisma.block.findFirst({
+      where: {
+        OR: [
+          { blockerId: session.user.id, blockedId: userId },
+          { blockerId: userId, blockedId: session.user.id },
+        ],
+      },
+    });
+
+    if (isBlocked) {
+      return NextResponse.json({ error: 'Cannot follow this user' }, { status: 403 });
+    }
+
     // Check if already following
     const existingFollow = await prisma.follow.findUnique({
       where: {

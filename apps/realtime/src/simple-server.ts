@@ -209,7 +209,7 @@ class MatchmakingQueue {
     return false;
   }
 
-  findMatch(tc: string, rated: boolean): QueueEntry[] | null {
+  async findMatch(tc: string, rated: boolean, checkBlock?: (userId1: string, userId2: string) => Promise<boolean>): Promise<QueueEntry[] | null> {
     const queueKey = `${tc}_${rated}`;
     const queue = this.queues.get(queueKey) || [];
 
@@ -219,10 +219,36 @@ class MatchmakingQueue {
     }
 
     if (queue.length >= 2) {
-      const player1 = queue.shift()!;
-      const player2 = queue.shift()!;
-      console.log(`[MATCH] Found match! ${player1.userId} vs ${player2.userId}`);
-      return [player1, player2];
+      // Try to find two players who haven't blocked each other
+      for (let i = 0; i < queue.length - 1; i++) {
+        const player1 = queue[i];
+        for (let j = i + 1; j < queue.length; j++) {
+          const player2 = queue[j];
+          
+          // Check if players have blocked each other
+          if (checkBlock) {
+            const isBlocked = await checkBlock(player1.userId, player2.userId);
+            if (isBlocked) {
+              continue; // Skip this pair, try next
+            }
+          }
+          
+          // Found a valid match
+          queue.splice(j, 1);
+          queue.splice(i, 1);
+          console.log(`[MATCH] Found match! ${player1.userId} vs ${player2.userId}`);
+          return [player1, player2];
+        }
+      }
+      
+      // If no valid match found (all pairs are blocked), return first two anyway
+      // (This prevents infinite queue waiting, but ideally we'd have more players)
+      if (queue.length >= 2) {
+        const player1 = queue.shift()!;
+        const player2 = queue.shift()!;
+        console.log(`[MATCH] Found match (fallback)! ${player1.userId} vs ${player2.userId}`);
+        return [player1, player2];
+      }
     }
 
     return null;
@@ -461,7 +487,10 @@ export class SimpleRealtimeServer {
   private async handleMessage(connection: ClientConnection, data: Buffer) {
     try {
       const message = JSON.parse(data.toString());
-      console.log('[MSG] Received message type:', message.t, 'from user:', connection.user?.handle || 'unauthenticated', 'userId:', connection.user?.id);
+      // Only log non-ping messages to reduce console noise
+      if (message.t !== 'ping') {
+        console.log('[MSG] Received message type:', message.t, 'from user:', connection.user?.handle || 'unauthenticated', 'userId:', connection.user?.id);
+      }
 
       const validationResult = validateClientMessage(message);
 
@@ -704,16 +733,35 @@ export class SimpleRealtimeServer {
   }
 
   private startMatchmaking() {
-    this.matchmakingInterval = setInterval(() => {
+    this.matchmakingInterval = setInterval(async () => {
       // Check for matches in all queues
       const timeControls = ['1+0', '2+0'];
       const ratedOptions = [true, false];
 
       let matchesFound = 0;
 
+      // Helper function to check if two users have blocked each other
+      const checkBlock = async (userId1: string, userId2: string): Promise<boolean> => {
+        try {
+          const { prisma } = await import('@chess960/db');
+          const block = await prisma.block.findFirst({
+            where: {
+              OR: [
+                { blockerId: userId1, blockedId: userId2 },
+                { blockerId: userId2, blockedId: userId1 },
+              ],
+            },
+          });
+          return !!block;
+        } catch (error) {
+          console.error('[ERR] Error checking block status:', error);
+          return false; // On error, allow matching (fail open)
+        }
+      };
+
       for (const tc of timeControls) {
         for (const rated of ratedOptions) {
-          const match = this.matchmakingQueue.findMatch(tc, rated);
+          const match = await this.matchmakingQueue.findMatch(tc, rated, checkBlock);
           if (match) {
             console.log(`[MATCH] Match found! ${match[0].userId} vs ${match[1].userId} (${tc}, ${rated ? 'rated' : 'casual'})`);
             matchesFound++;
@@ -1244,6 +1292,28 @@ export class SimpleRealtimeServer {
     const isWhitePlayer = connection.user.id === game.whiteId;
     const playerColor = isWhitePlayer ? 'white' : 'black';
 
+    // Check if players have blocked each other
+    try {
+      const { prisma } = await import('@chess960/db');
+      const opponentId = isWhitePlayer ? game.blackId : game.whiteId;
+      const isBlocked = await prisma.block.findFirst({
+        where: {
+          OR: [
+            { blockerId: connection.user.id, blockedId: opponentId },
+            { blockerId: opponentId, blockedId: connection.user.id },
+          ],
+        },
+      });
+
+      if (isBlocked) {
+        this.sendError(connection, 'BLOCKED', 'Cannot offer rematch to this user');
+        return;
+      }
+    } catch (error) {
+      console.error('[ERR] Error checking block status for rematch:', error);
+      // Continue on error (fail open) to avoid breaking rematch
+    }
+
     console.log(`[REMATCH] ${connection.user.handle} offered rematch in game ${gameId}`);
 
     // Store rematch offer in game state
@@ -1418,6 +1488,28 @@ export class SimpleRealtimeServer {
     if (!isWhitePlayer && !isBlackPlayer) {
       this.sendError(connection, 'NOT_IN_GAME', 'Not a player in this game');
       return;
+    }
+
+    // Check if players have blocked each other
+    try {
+      const { prisma } = await import('@chess960/db');
+      const opponentId = isWhitePlayer ? game.blackId : game.whiteId;
+      const isBlocked = await prisma.block.findFirst({
+        where: {
+          OR: [
+            { blockerId: connection.user.id, blockedId: opponentId },
+            { blockerId: opponentId, blockedId: connection.user.id },
+          ],
+        },
+      });
+
+      if (isBlocked) {
+        this.sendError(connection, 'BLOCKED', 'Cannot send messages to this user');
+        return;
+      }
+    } catch (error) {
+      console.error('[ERR] Error checking block status for chat:', error);
+      // Continue on error (fail open) to avoid breaking game chat
     }
 
     const playerColor = isWhitePlayer ? 'white' : 'black';

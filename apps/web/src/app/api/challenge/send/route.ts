@@ -24,6 +24,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'You cannot challenge yourself' }, { status: 400 });
     }
 
+    // Check if user is blocked
+    const isBlocked = await prisma.block.findFirst({
+      where: {
+        OR: [
+          { blockerId: session.user.id, blockedId: receiverId },
+          { blockerId: receiverId, blockedId: session.user.id },
+        ],
+      },
+    });
+
+    if (isBlocked) {
+      return NextResponse.json({ error: 'Cannot challenge this user' }, { status: 403 });
+    }
+
     // Use unified BULLET rating for all bullet games
     const ratingTc = 'BULLET';
 

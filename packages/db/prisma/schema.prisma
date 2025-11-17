@@ -9,10 +9,10 @@ datasource db {
 }
 
 model BetaEmail {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  createdAt DateTime @default(now()) @map("created_at")
-  isNotified Boolean  @default(false) @map("is_notified")
+  id         String    @id @default(cuid())
+  email      String    @unique
+  createdAt  DateTime  @default(now()) @map("created_at")
+  isNotified Boolean   @default(false) @map("is_notified")
   notifiedAt DateTime? @map("notified_at")
 }
 
@@ -73,6 +73,11 @@ model User {
   subscriptions            Subscription[]
   tournamentPlayers        TournamentPlayer[]
   pushSubscriptions        PushSubscription[]
+  puzzleRating            PuzzleRating?
+  puzzleRounds            PuzzleRound[]
+  puzzleThemeVotes         PuzzleThemeVote[]
+  blockedUsers            Block[]                @relation("UserBlocking")
+  blockedByUsers          Block[]                @relation("UserBlocked")
 
   @@map("users")
 }
@@ -157,6 +162,7 @@ model Game {
   white              User?               @relation("WhitePlayer", fields: [whiteId], references: [id])
   moves              Move[]
   tournamentPairings TournamentPairing[]
+  puzzles            Puzzle[]
 
   @@index([variant])
   @@index([chess960Position])
@@ -269,6 +275,20 @@ model Follow {
   @@index([followerId])
   @@index([followingId])
   @@map("follows")
+}
+
+model Block {
+  id        String   @id @default(cuid())
+  blockerId String   @map("blocker_id")
+  blockedId String   @map("blocked_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  blocker   User     @relation("UserBlocking", fields: [blockerId], references: [id], onDelete: Cascade)
+  blocked   User     @relation("UserBlocked", fields: [blockedId], references: [id], onDelete: Cascade)
+
+  @@unique([blockerId, blockedId])
+  @@index([blockerId])
+  @@index([blockedId])
+  @@map("blocks")
 }
 
 model Message {
@@ -594,6 +614,77 @@ model Notification {
   @@index([userId, createdAt])
   @@index([type])
   @@map("notifications")
+}
+
+model Puzzle {
+  id        String        @id @default(cuid())
+  gameId    String        @map("game_id")
+  fen       String
+  solution  String
+  moves     String[]
+  rating    Int
+  plays     Int           @default(0)
+  votes     Int           @default(0)
+  themes    String[]      @default([])
+  day       DateTime?     @unique
+  createdAt DateTime      @default(now()) @map("created_at")
+  game      Game          @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  rounds    PuzzleRound[]
+  themeVotes PuzzleThemeVote[]
+
+  @@index([day])
+  @@index([rating])
+  @@index([plays])
+  @@index([gameId])
+  @@map("puzzles")
+}
+
+model PuzzleThemeVote {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  puzzleId  String   @map("puzzle_id")
+  theme     String
+  createdAt DateTime @default(now()) @map("created_at")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  puzzle    Puzzle   @relation(fields: [puzzleId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, puzzleId, theme])
+  @@index([puzzleId])
+  @@index([theme])
+  @@map("puzzle_theme_votes")
+}
+
+model PuzzleRating {
+  id        String   @id @default(cuid())
+  userId    String   @unique @map("user_id")
+  rating    Decimal  @default(1500) @db.Decimal(10, 2)
+  rd        Decimal  @default(350) @db.Decimal(10, 2)
+  vol       Decimal  @default(0.06) @db.Decimal(10, 4)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("puzzle_ratings")
+}
+
+model PuzzleRound {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  puzzleId  String   @map("puzzle_id")
+  win       Boolean  @default(false)
+  ratingBefore Int   @map("rating_before")
+  ratingAfter  Int   @map("rating_after")
+  ratingDiff   Int   @map("rating_diff")
+  createdAt DateTime @default(now()) @map("created_at")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  puzzle    Puzzle   @relation(fields: [puzzleId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, puzzleId])
+  @@index([userId])
+  @@index([puzzleId])
+  @@index([createdAt])
+  @@map("puzzle_rounds")
 }
 
 model PushSubscription {
