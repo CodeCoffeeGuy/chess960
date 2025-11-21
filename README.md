@@ -2,7 +2,7 @@
 
 <div align="center">
 
-A modern, real-time Chess960 (Fischer Random Chess) platform with tournaments, social features, and advanced gameplay.
+A modern, real-time Chess960 (Fischer Random Chess) platform with tournaments, study mode, opening explorer, puzzles, social features, and advanced gameplay.
 
 [![AGPL License](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](LICENSE)
 [![Next.js](https://img.shields.io/badge/Next.js-15-black)](https://nextjs.org/)
@@ -17,7 +17,7 @@ A modern, real-time Chess960 (Fischer Random Chess) platform with tournaments, s
 
 ## About
 
-Chess960 is an open-source, real-time platform for Fischer Random Chess. Play online with players worldwide across all time controls—from lightning-fast bullet to classical games. Experience competitive tournaments, build your rating, and enjoy chess without memorization.
+Chess960 is an open-source, real-time platform for Fischer Random Chess. Play online with players worldwide across all time controls—from lightning-fast bullet to classical games. Experience competitive tournaments, build your rating, create and share annotated studies, explore openings, solve puzzles, and enjoy chess without memorization.
 
 ### What is Chess960?
 
@@ -42,16 +42,42 @@ Chess960, also known as Fischer Random Chess, is a chess variant invented by Bob
 - **Performance ratings** and podium displays
 - **Real-time leaderboards** during tournaments
 - **Anti-ragequit system** for fair play
+- **Tournament chat** for real-time communication
 
 #### Game Features
 - **Chess960 positions** (all 960 starting positions)
 - **Premoves** for lightning-fast play
-- **Move arrows** and highlighting
+- **Move arrows** and square highlighting
 - **Takeback requests** and draw offers
 - **Rematch offers** after games
 - **Spectator mode** with live viewer list
 - **Game analysis** with Stockfish engine
+- **Post-game analysis** with move accuracy and evaluation graphs
 - **PGN export** for all games
+
+#### Learning & Training
+- **Study Mode** - Create and share annotated game studies
+  - Multiple chapters per study
+  - Move-by-move annotations with comments
+  - Glyphs (!, ?, !!, ??) for move evaluation
+  - Variations (alternative lines)
+  - Visual annotations (arrows and circles on board)
+  - PGN import/export
+  - Tags for categorization and search
+  - Drag & drop chapter reordering
+  - Public and private studies
+  - Like and comment system
+- **Opening Explorer** - Database of Chess960 opening moves
+  - All 960 starting positions
+  - Move statistics (win rate, popularity, average rating)
+  - Opening lines with move navigation
+  - Game linking (played games appear in explorer)
+- **Practice Mode** - Interactive lessons (coming soon)
+- **Puzzles** - Daily puzzles with rating system
+  - Puzzle themes and voting
+  - Puzzle dashboard and history
+  - Glicko-2 puzzle rating
+  - Keyboard navigation for reviewing moves
 
 #### Social Features
 - **User profiles** with statistics and rating graphs
@@ -151,6 +177,12 @@ chess960/
 │   │   │   └── schema.prisma
 │   │   └── index.ts
 │   │
+│   ├── chess960-board/  # Custom Chess960 board component
+│   │   └── src/         # React board component
+│   │
+│   ├── chess960-puzzle-generator/  # Puzzle generation
+│   │   └── src/         # Stockfish-based puzzle generator
+│   │
 │   ├── proto/           # Shared TypeScript types
 │   ├── rating/          # Glicko-2 rating algorithm
 │   ├── redis-client/    # Redis operations
@@ -166,7 +198,7 @@ chess960/
 | Layer | Technology |
 |-------|-----------|
 | **Frontend** | Next.js 15, React 18, Tailwind CSS |
-| **Chess UI** | react-chessboard, chess.js |
+| **Chess UI** | @chess960/board (custom), chess.js |
 | **Backend** | Node.js, WebSocket (ws library) |
 | **Database** | PostgreSQL 16 (Prisma ORM) |
 | **Cache** | Redis 7 |
@@ -290,9 +322,9 @@ This project is licensed under the GNU Affero General Public License v3.0 (AGPL-
 
 - **Bobby Fischer** for creating Chess960
 - [chess.js](https://github.com/jhlywa/chess.js) for chess logic and Chess960 support
-- [react-chessboard](https://github.com/Clariity/react-chessboard) for the beautiful board
 - [Stockfish](https://stockfishchess.org/) for the powerful chess engine
 - [Glicko-2](http://www.glicko.net/glicko.html) rating system by Mark Glickman
+- The open-source chess community for inspiration and feedback
 
 ## Community & Support
 
