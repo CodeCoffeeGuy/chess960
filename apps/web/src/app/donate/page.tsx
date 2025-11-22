@@ -133,18 +133,14 @@ export default function DonatePage() {
 
   return (
     <div className="min-h-screen bg-[#1f1d1a] light:bg-[#f5f1ea] text-white light:text-black">
-      <div className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-orange-600/10 via-transparent to-red-600/10"></div>
-
-        <div className="relative max-w-5xl mx-auto px-4 py-12 sm:py-16 lg:py-20 text-center">
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4 sm:mb-6 bg-gradient-to-r from-orange-300 to-orange-400 bg-clip-text text-transparent">
-            Support Chess960
-          </h1>
-          <p className="text-lg sm:text-xl text-[#c1b9ad] light:text-[#5a5449] max-w-2xl mx-auto leading-relaxed px-2">
-            Help us keep Chess960 free and accessible for everyone.
-            Your support powers our servers and enables continuous development of new features.
-          </p>
-        </div>
+      <div className="max-w-5xl mx-auto px-4 py-12 sm:py-16 lg:py-20 text-center">
+        <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4 sm:mb-6 bg-gradient-to-r from-orange-300 to-orange-400 bg-clip-text text-transparent">
+          Support Chess960
+        </h1>
+        <p className="text-lg sm:text-xl text-[#c1b9ad] light:text-[#5a5449] max-w-2xl mx-auto leading-relaxed px-2">
+          Help us keep Chess960 free and accessible for everyone.
+          Your support powers our servers and enables continuous development of new features.
+        </p>
       </div>
 
       <AnimatedSection className="max-w-6xl mx-auto px-4 py-12 sm:py-16">
