@@ -167,11 +167,79 @@ export class GamePersistenceService {
       // Update user stats (games played, won, lost, drawn)
       await this.updateUserStats(gameState);
 
+      // Link game to opening if it matches an opening
+      await this.linkGameToOpening(gameState, game.id);
+
       // Game completion notifications removed as requested
 
     } catch (error) {
       console.error('Failed to persist game:', gameState.id, error);
       throw error;
+    }
+  }
+  
+  private async linkGameToOpening(gameState: GameState, gameId: string): Promise<void> {
+    try {
+      // Only link if game has moves and is Chess960
+      if (!gameState.moves || gameState.moves.length === 0 || !gameState.chess960Position) {
+        return;
+      }
+      
+      // Try to match opening by checking if game's moves start with opening's moves
+      // Check openings with matching chess960Position
+      const openings = await (db as any).opening.findMany({
+        where: {
+          chess960Position: gameState.chess960Position,
+        },
+      });
+      
+      if (openings.length === 0) {
+        return;
+      }
+      
+      const gameMovesString = gameState.moves.join(' ');
+      
+      // Find the longest matching opening (most specific)
+      let bestMatch: any = null;
+      let bestMatchLength = 0;
+      
+      for (const opening of openings) {
+        const openingMoves = opening.moves.trim();
+        if (openingMoves.length === 0) continue;
+        
+        // Check if game moves start with opening moves
+        if (gameMovesString.startsWith(openingMoves)) {
+          if (openingMoves.length > bestMatchLength) {
+            bestMatch = opening;
+            bestMatchLength = openingMoves.length;
+          }
+        }
+      }
+      
+      if (bestMatch) {
+        // Check if link already exists
+        const existingLink = await (db as any).openingGame.findFirst({
+          where: {
+            openingId: bestMatch.id,
+            gameId: gameId,
+          },
+        });
+        
+        if (!existingLink) {
+          // Create link
+          await (db as any).openingGame.create({
+            data: {
+              openingId: bestMatch.id,
+              gameId: gameId,
+            },
+          });
+          
+          console.log(`Linked game ${gameId} to opening ${bestMatch.id} (${bestMatch.name})`);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to link game to opening:', error);
+      // Don't throw - this is not critical
     }
   }
 
