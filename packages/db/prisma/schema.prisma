@@ -17,55 +17,56 @@ model BetaEmail {
 }
 
 model User {
-  id                       String             @id @default(cuid())
-  email                    String?            @unique
-  handle                   String?            @unique
-  handleChangedAt          DateTime?          @map("handle_changed_at")
+  id                       String               @id @default(cuid())
+  email                    String?              @unique
+  handle                   String?              @unique
+  handleChangedAt          DateTime?            @map("handle_changed_at")
   password                 String?
-  emailVerified            DateTime?          @map("email_verified")
-  emailVerificationToken   String?            @map("email_verification_token")
-  emailVerificationExpires DateTime?          @map("email_verification_expires")
+  emailVerified            DateTime?            @map("email_verified")
+  emailVerificationToken   String?              @map("email_verification_token")
+  emailVerificationExpires DateTime?            @map("email_verification_expires")
   image                    String?
   name                     String?
-  fullName                 String?            @map("full_name")
+  fullName                 String?              @map("full_name")
   country                  String?
-  createdAt                DateTime           @default(now()) @map("created_at")
-  deletedAt                DateTime?          @map("deleted_at")
-  lastActivityAt           DateTime?          @map("last_activity_at")
-  isSupporter              Boolean            @default(false) @map("is_supporter")
-  supporterSince           DateTime?          @map("supporter_since")
-  gamesPlayed              Int                @default(0) @map("games_played")
-  gamesWon                 Int                @default(0) @map("games_won")
-  gamesLost                Int                @default(0) @map("games_lost")
-  gamesDrawn               Int                @default(0) @map("games_drawn")
-  allowFriendRequests      Boolean            @default(true) @map("allow_friend_requests")
-  allowMessages            Boolean            @default(true) @map("allow_messages")
-  allowGameMessages        Boolean            @default(true) @map("allow_game_messages")
-  allowChallenges          ChallengePrivacy   @default(REGISTERED) @map("allow_challenges")
-  allowTakebacks           Boolean            @default(true) @map("allow_takebacks")
-  gameNotifications        Boolean            @default(true) @map("game_notifications")
-  pushNotifications        Boolean            @default(true) @map("push_notifications")
-  tournamentNotifications  Boolean            @default(true) @map("tournament_notifications")
-  twoFactorBackupCodes     String[]           @default([]) @map("two_factor_backup_codes")
-  twoFactorEnabled         Boolean            @default(false) @map("two_factor_enabled")
-  twoFactorSecret          String?            @map("two_factor_secret")
+  createdAt                DateTime             @default(now()) @map("created_at")
+  deletedAt                DateTime?            @map("deleted_at")
+  lastActivityAt           DateTime?            @map("last_activity_at")
+  isSupporter              Boolean              @default(false) @map("is_supporter")
+  supporterSince           DateTime?            @map("supporter_since")
+  gamesPlayed              Int                  @default(0) @map("games_played")
+  gamesWon                 Int                  @default(0) @map("games_won")
+  gamesLost                Int                  @default(0) @map("games_lost")
+  gamesDrawn               Int                  @default(0) @map("games_drawn")
+  allowFriendRequests      Boolean              @default(true) @map("allow_friend_requests")
+  allowMessages            Boolean              @default(true) @map("allow_messages")
+  allowGameMessages        Boolean              @default(true) @map("allow_game_messages")
+  allowChallenges          ChallengePrivacy     @default(REGISTERED) @map("allow_challenges")
+  allowTakebacks           Boolean              @default(true) @map("allow_takebacks")
+  gameNotifications        Boolean              @default(true) @map("game_notifications")
+  pushNotifications        Boolean              @default(true) @map("push_notifications")
+  tournamentNotifications  Boolean              @default(true) @map("tournament_notifications")
+  twoFactorBackupCodes     String[]             @default([]) @map("two_factor_backup_codes")
+  twoFactorEnabled         Boolean              @default(false) @map("two_factor_enabled")
+  twoFactorSecret          String?              @map("two_factor_secret")
+  isAdmin                  Boolean              @default(false) @map("is_admin")
   accounts                 Account[]
-  receivedChallenges       Challenge[]        @relation("ChallengeReceiver")
-  sentChallenges           Challenge[]        @relation("ChallengeSender")
+  receivedChallenges       Challenge[]          @relation("ChallengeReceiver")
+  sentChallenges           Challenge[]          @relation("ChallengeSender")
   donations                Donation[]
   fairplayFlags            FairplayFlag[]
-  following                Follow[]           @relation("UserFollowing")
-  followers                Follow[]           @relation("UserFollowers")
-  receivedFriendRequests   FriendRequest[]    @relation("FriendRequestReceiver")
-  sentFriendRequests       FriendRequest[]    @relation("FriendRequestSender")
-  friendships1             Friendship[]       @relation("FriendshipUser1")
-  friendships2             Friendship[]       @relation("FriendshipUser2")
-  spectating               GameSpectator[]    @relation("Spectating")
-  blackGames               Game[]             @relation("BlackPlayer")
-  whiteGames               Game[]             @relation("WhitePlayer")
-  hostedLobbies            Lobby[]            @relation("HostedLobbies")
-  receivedMessages         Message[]          @relation("MessageReceiver")
-  sentMessages             Message[]          @relation("MessageSender")
+  following                Follow[]             @relation("UserFollowing")
+  followers                Follow[]             @relation("UserFollowers")
+  receivedFriendRequests   FriendRequest[]      @relation("FriendRequestReceiver")
+  sentFriendRequests       FriendRequest[]      @relation("FriendRequestSender")
+  friendships1             Friendship[]         @relation("FriendshipUser1")
+  friendships2             Friendship[]         @relation("FriendshipUser2")
+  spectating               GameSpectator[]      @relation("Spectating")
+  blackGames               Game[]               @relation("BlackPlayer")
+  whiteGames               Game[]               @relation("WhitePlayer")
+  hostedLobbies            Lobby[]              @relation("HostedLobbies")
+  receivedMessages         Message[]            @relation("MessageReceiver")
+  sentMessages             Message[]            @relation("MessageSender")
   mmEvents                 MmEvent[]
   notifications            Notification[]
   ratings                  Rating[]
@@ -73,11 +74,18 @@ model User {
   subscriptions            Subscription[]
   tournamentPlayers        TournamentPlayer[]
   pushSubscriptions        PushSubscription[]
-  puzzleRating            PuzzleRating?
-  puzzleRounds            PuzzleRound[]
+  puzzleRating             PuzzleRating?
+  puzzleRounds             PuzzleRound[]
   puzzleThemeVotes         PuzzleThemeVote[]
-  blockedUsers            Block[]                @relation("UserBlocking")
-  blockedByUsers          Block[]                @relation("UserBlocked")
+  stormRuns                StormRun[]
+  blockedUsers             Block[]              @relation("UserBlocking")
+  blockedByUsers           Block[]              @relation("UserBlocked")
+  reportsCreated           Report[]             @relation("ReportReporter")
+  reportsReceived          Report[]             @relation("ReportReported")
+  studies                  Study[]              @relation("StudyOwner")
+  studyLikes               StudyLike[]          @relation("StudyLikes")
+  studyComments            StudyComment[]       @relation("StudyCommentAuthor")
+  practiceCompletions      PracticeCompletion[] @relation("PracticeCompletions")
 
   @@map("users")
 }
@@ -163,6 +171,7 @@ model Game {
   moves              Move[]
   tournamentPairings TournamentPairing[]
   puzzles            Puzzle[]
+  openingGames       OpeningGame[]
 
   @@index([variant])
   @@index([chess960Position])
@@ -289,6 +298,51 @@ model Block {
   @@index([blockerId])
   @@index([blockedId])
   @@map("blocks")
+}
+
+enum ReportReason {
+  CHEATING
+  TOXIC_BEHAVIOR
+  SPAM
+  HARASSMENT
+  INAPPROPRIATE_CONTENT
+  OTHER
+
+  @@map("report_reason")
+}
+
+enum ReportStatus {
+  PENDING
+  REVIEWING
+  RESOLVED
+  DISMISSED
+  ESCALATED
+
+  @@map("report_status")
+}
+
+model Report {
+  id          String       @id @default(cuid())
+  reporterId  String       @map("reporter_id")
+  reportedId  String       @map("reported_id")
+  reason      ReportReason
+  status      ReportStatus @default(PENDING)
+  description String?
+  gameId      String?      @map("game_id")
+  messageId   String?      @map("message_id")
+  reviewedBy  String?      @map("reviewed_by")
+  reviewedAt  DateTime?    @map("reviewed_at")
+  resolution  String?
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+  reporter    User         @relation("ReportReporter", fields: [reporterId], references: [id], onDelete: Cascade)
+  reported    User         @relation("ReportReported", fields: [reportedId], references: [id], onDelete: Cascade)
+
+  @@index([reportedId, status])
+  @@index([reporterId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("reports")
 }
 
 model Message {
@@ -617,19 +671,19 @@ model Notification {
 }
 
 model Puzzle {
-  id        String        @id @default(cuid())
-  gameId    String        @map("game_id")
-  fen       String
-  solution  String
-  moves     String[]
-  rating    Int
-  plays     Int           @default(0)
-  votes     Int           @default(0)
-  themes    String[]      @default([])
-  day       DateTime?     @unique
-  createdAt DateTime      @default(now()) @map("created_at")
-  game      Game          @relation(fields: [gameId], references: [id], onDelete: Cascade)
-  rounds    PuzzleRound[]
+  id         String            @id @default(cuid())
+  gameId     String            @map("game_id")
+  fen        String
+  solution   String
+  moves      String[]
+  rating     Int
+  plays      Int               @default(0)
+  votes      Int               @default(0)
+  themes     String[]          @default([])
+  day        DateTime?         @unique
+  createdAt  DateTime          @default(now()) @map("created_at")
+  game       Game              @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  rounds     PuzzleRound[]
   themeVotes PuzzleThemeVote[]
 
   @@index([day])
@@ -669,22 +723,43 @@ model PuzzleRating {
 }
 
 model PuzzleRound {
-  id        String   @id @default(cuid())
-  userId    String   @map("user_id")
-  puzzleId  String   @map("puzzle_id")
-  win       Boolean  @default(false)
-  ratingBefore Int   @map("rating_before")
-  ratingAfter  Int   @map("rating_after")
-  ratingDiff   Int   @map("rating_diff")
-  createdAt DateTime @default(now()) @map("created_at")
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  puzzle    Puzzle   @relation(fields: [puzzleId], references: [id], onDelete: Cascade)
+  id           String   @id @default(cuid())
+  userId       String   @map("user_id")
+  puzzleId     String   @map("puzzle_id")
+  win          Boolean  @default(false)
+  ratingBefore Int      @map("rating_before")
+  ratingAfter  Int      @map("rating_after")
+  ratingDiff   Int      @map("rating_diff")
+  createdAt    DateTime @default(now()) @map("created_at")
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  puzzle       Puzzle   @relation(fields: [puzzleId], references: [id], onDelete: Cascade)
 
   @@unique([userId, puzzleId])
   @@index([userId])
   @@index([puzzleId])
   @@index([createdAt])
   @@map("puzzle_rounds")
+}
+
+model StormRun {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  score     Int      @default(0)
+  moves     Int      @default(0)
+  errors    Int      @default(0)
+  combo     Int      @default(0)
+  time      Int      @default(0)
+  highest   Int      @default(0)
+  puzzles   String[] @default([])
+  createdAt DateTime @default(now()) @map("created_at")
+  day       DateTime @map("day")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([day])
+  @@index([score])
+  @@index([userId, day])
+  @@map("storm_runs")
 }
 
 model PushSubscription {
@@ -793,4 +868,192 @@ enum NotificationType {
   SYSTEM
 
   @@map("notification_type")
+}
+
+// Study Mode - Annotated game studies
+model Study {
+  id          String         @id @default(cuid())
+  title       String
+  description String?
+  ownerId     String         @map("owner_id")
+  isPublic    Boolean        @default(false) @map("is_public")
+  tags        String[]       @default([]) // Tags for categorization
+  createdAt   DateTime       @default(now()) @map("created_at")
+  updatedAt   DateTime       @updatedAt @map("updated_at")
+  likes       Int            @default(0)
+  views       Int            @default(0)
+  owner       User           @relation("StudyOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  chapters    StudyChapter[]
+  comments    StudyComment[]
+  likesUsers  StudyLike[]
+
+  @@index([ownerId])
+  @@index([isPublic, createdAt])
+  @@map("studies")
+}
+
+model StudyLike {
+  id        String   @id @default(cuid())
+  studyId   String   @map("study_id")
+  userId    String   @map("user_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  study     Study    @relation(fields: [studyId], references: [id], onDelete: Cascade)
+  user      User     @relation("StudyLikes", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([studyId, userId])
+  @@index([studyId])
+  @@index([userId])
+  @@map("study_likes")
+}
+
+model StudyChapter {
+  id         String   @id @default(cuid())
+  studyId    String   @map("study_id")
+  name       String
+  order      Int      @default(0)
+  initialFen String   @map("initial_fen")
+  pgn        String? // PGN with annotations
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+  study      Study    @relation(fields: [studyId], references: [id], onDelete: Cascade)
+
+  @@index([studyId, order])
+  @@map("study_chapters")
+}
+
+model StudyComment {
+  id        String   @id @default(cuid())
+  studyId   String   @map("study_id")
+  userId    String   @map("user_id")
+  movePly   Int?     @map("move_ply") // Which move this comment refers to
+  text      String
+  createdAt DateTime @default(now()) @map("created_at")
+  study     Study    @relation(fields: [studyId], references: [id], onDelete: Cascade)
+  user      User     @relation("StudyCommentAuthor", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([studyId])
+  @@index([userId])
+  @@map("study_comments")
+}
+
+// Practice Mode - Interactive lessons
+model Practice {
+  id          String               @id @default(cuid())
+  title       String
+  description String?
+  category    PracticeCategory
+  difficulty  PracticeDifficulty   @default(BEGINNER)
+  order       Int                  @default(0)
+  createdAt   DateTime             @default(now()) @map("created_at")
+  updatedAt   DateTime             @updatedAt @map("updated_at")
+  lessons     PracticeLesson[]
+  completions PracticeCompletion[]
+
+  @@index([category, difficulty])
+  @@map("practices")
+}
+
+model PracticeLesson {
+  id           String   @id @default(cuid())
+  practiceId   String   @map("practice_id")
+  title        String
+  order        Int      @default(0)
+  initialFen   String   @map("initial_fen")
+  instructions String // Markdown instructions
+  solution     String? // PGN solution
+  hints        String[] // Array of hints
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+  practice     Practice @relation(fields: [practiceId], references: [id], onDelete: Cascade)
+
+  @@index([practiceId, order])
+  @@map("practice_lessons")
+}
+
+model PracticeCompletion {
+  id          String   @id @default(cuid())
+  practiceId  String   @map("practice_id")
+  userId      String   @map("user_id")
+  completedAt DateTime @default(now()) @map("completed_at")
+  score       Int? // Score out of 100
+  practice    Practice @relation(fields: [practiceId], references: [id], onDelete: Cascade)
+  user        User     @relation("PracticeCompletions", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([practiceId, userId])
+  @@index([userId])
+  @@index([practiceId])
+  @@map("practice_completions")
+}
+
+enum PracticeCategory {
+  OPENING
+  MIDDLEGAME
+  ENDGAME
+  TACTICS
+  STRATEGY
+  CHECKMATE
+
+  @@map("practice_category")
+}
+
+enum PracticeDifficulty {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+  EXPERT
+
+  @@map("practice_difficulty")
+}
+
+// Opening Explorer - Opening database with statistics
+model Opening {
+  id               String        @id @default(cuid())
+  name             String
+  eco              String? // E.g., "A00", "B20"
+  moves            String // UCI moves separated by spaces, e.g., "e2e4 e7e5"
+  fen              String // Position after these moves
+  chess960Position Int?          @map("chess960_position") // Chess960 starting position (1-960)
+  createdAt        DateTime      @default(now()) @map("created_at")
+  updatedAt        DateTime      @updatedAt @map("updated_at")
+  movesData        OpeningMove[]
+  games            OpeningGame[]
+
+  @@unique([moves, chess960Position])
+  @@index([eco])
+  @@index([name])
+  @@index([chess960Position])
+  @@map("openings")
+}
+
+model OpeningMove {
+  id          String   @id @default(cuid())
+  openingId   String   @map("opening_id")
+  move        String // UCI move, e.g., "e2e4"
+  moveNumber  Int      @map("move_number") // 1-based move number
+  gamesPlayed Int      @default(0) @map("games_played")
+  gamesWon    Int      @default(0) @map("games_won")
+  gamesDrawn  Int      @default(0) @map("games_drawn")
+  gamesLost   Int      @default(0) @map("games_lost")
+  avgRating   Decimal? @map("avg_rating") @db.Decimal(10, 2)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  opening     Opening  @relation(fields: [openingId], references: [id], onDelete: Cascade)
+
+  @@unique([openingId, move])
+  @@index([openingId, moveNumber])
+  @@map("opening_moves")
+}
+
+model OpeningGame {
+  id        String   @id @default(cuid())
+  openingId String   @map("opening_id")
+  gameId    String   @map("game_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  opening   Opening  @relation(fields: [openingId], references: [id], onDelete: Cascade)
+  game      Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  @@unique([openingId, gameId])
+  @@index([openingId])
+  @@index([gameId])
+  @@map("opening_games")
 }

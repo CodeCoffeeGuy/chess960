@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "studies" ADD COLUMN IF NOT EXISTS "tags" TEXT[] DEFAULT ARRAY[]::TEXT[];
