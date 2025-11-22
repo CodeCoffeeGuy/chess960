@@ -21,10 +21,13 @@ interface NavigationUser {
 export function Navigation() {
   const [isOpen, setIsOpen] = useState(false);
   const [user, setUser] = useState<NavigationUser | null>(null);
+  const [mounted, setMounted] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [playDropdownOpen, setPlayDropdownOpen] = useState(false);
   const [tournamentsDropdownOpen, setTournamentsDropdownOpen] = useState(false);
+  const [learnDropdownOpen, setLearnDropdownOpen] = useState(false);
   const [mobileTournamentsOpen, setMobileTournamentsOpen] = useState(false);
+  const [mobileLearnOpen, setMobileLearnOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchExpanded, setSearchExpanded] = useState(false);
   type SearchBuckets = {
@@ -40,6 +43,11 @@ export function Navigation() {
   const pathname = usePathname();
   const { data: session, status } = useSession();
   const loading = status === 'loading';
+
+  // Prevent hydration mismatch by only rendering after mount
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -149,19 +157,9 @@ export function Navigation() {
         });
       }
     } else {
-      // If no NextAuth session, check for guest token
-      const cookieContext = getUserContextFromCookies();
-      if (cookieContext.userId && cookieContext.type === 'guest') {
-        // User is a guest
-        setUser({
-          id: cookieContext.userId,
-          handle: cookieContext.username || 'Guest',
-          email: '',
-        });
-      } else {
-        // No session and no guest token
-        setUser(null);
-      }
+      // If no NextAuth session, don't set user state
+      // Guest users should see "Sign In" button, not their guest handle
+      setUser(null);
     }
   }, [session]);
 
@@ -206,7 +204,7 @@ export function Navigation() {
 
   return (
     <>
-    <nav className="bg-[#2a2926]/80 light:bg-white/90 backdrop-blur-md border-b border-[#3e3a33] light:border-[#d4caba] sticky top-0 z-50 shadow-[0_8px_24px_rgba(0,0,0,0.35)] light:shadow-[0_8px_24px_rgba(0,0,0,0.08)]">
+    <nav className="bg-[#2a2926]/80 light:bg-white/90 backdrop-blur-md border-b border-[#3e3a33] light:border-[#d4caba] sticky top-0 z-50 shadow-[0_8px_24px_rgba(0,0,0,0.35)] light:shadow-[0_8px_24px_rgba(0,0,0,0.08)]" suppressHydrationWarning>
       <div className="w-full px-2 sm:px-3 md:px-3 lg:px-4">
         <div className="flex items-center h-16">
           {/* Logo */}
@@ -325,6 +323,64 @@ export function Navigation() {
               Leaderboard
             </Link>
 
+            {/* Learn Dropdown */}
+            <div
+              className="relative"
+              onMouseEnter={() => setLearnDropdownOpen(true)}
+              onMouseLeave={() => setLearnDropdownOpen(false)}
+            >
+              <button
+                className="px-4 py-2 text-[#c1b9ad] light:text-[#4a453e] hover:text-orange-200 light:hover:text-orange-400 rounded-lg hover:bg-[#2f2b27] light:hover:bg-[#f0ebe0] border border-transparent hover:border-[#474239] light:hover:border-[#d4caba] transition-all duration-200 font-medium"
+              >
+                Learn
+              </button>
+
+              {learnDropdownOpen && (
+                <div className="absolute left-0 mt-0 pt-2 w-48">
+                  <div className="bg-[#2a2926] light:bg-white border border-[#454038] light:border-[#d4caba] rounded-lg shadow-lg py-1">
+                    <Link
+                      href="/study"
+                      className="block px-4 py-2 text-[#c1b9ad] light:text-[#4a453e] hover:text-white light:hover:text-black hover:bg-[#33302c] light:hover:bg-[#f0ebe0] transition-colors"
+                    >
+                      Study
+                    </Link>
+                    {/* Practice temporarily hidden - not ready yet */}
+                    {/* <Link
+                      href="/practice"
+                      className="block px-4 py-2 text-[#c1b9ad] light:text-[#4a453e] hover:text-white light:hover:text-black hover:bg-[#33302c] light:hover:bg-[#f0ebe0] transition-colors"
+                    >
+                      Practice
+                    </Link> */}
+                    <Link
+                      href="/opening"
+                      className="block px-4 py-2 text-[#c1b9ad] light:text-[#4a453e] hover:text-white light:hover:text-black hover:bg-[#33302c] light:hover:bg-[#f0ebe0] transition-colors"
+                    >
+                      Opening Explorer
+                    </Link>
+                    {/* Puzzle features coming soon */}
+                    {/* <Link
+                      href="/puzzle/dashboard"
+                      className="block px-4 py-2 text-[#c1b9ad] light:text-[#4a453e] hover:text-white light:hover:text-black hover:bg-[#33302c] light:hover:bg-[#f0ebe0] transition-colors"
+                    >
+                      Puzzles
+                    </Link>
+                    <Link
+                      href="/puzzle/themes"
+                      className="block px-4 py-2 text-[#c1b9ad] light:text-[#4a453e] hover:text-white light:hover:text-black hover:bg-[#33302c] light:hover:bg-[#f0ebe0] transition-colors"
+                    >
+                      Puzzle Themes
+                    </Link>
+                    <Link
+                      href="/storm"
+                      className="block px-4 py-2 text-[#c1b9ad] light:text-[#4a453e] hover:text-white light:hover:text-black hover:bg-[#33302c] light:hover:bg-[#f0ebe0] transition-colors"
+                    >
+                      Puzzle Storm
+                    </Link> */}
+                  </div>
+                </div>
+              )}
+            </div>
+
             {/* Donate */}
             <Link
               href="/donate"
@@ -417,17 +473,18 @@ export function Navigation() {
             {/* Notifications */}
             <NotificationDropdown />
 
-            {loading ? (
-              <div className="w-8 h-8 border-2 border-orange-300 border-t-transparent rounded-full animate-spin"></div>
-            ) : user ? (
-              <div className="relative">
-                <button
-                  onClick={() => setDropdownOpen(!dropdownOpen)}
-                  className="flex items-center space-x-2 text-white light:text-black hover:text-orange-200 light:hover:text-orange-400 transition-colors px-3 py-2"
-                >
-                  <User className="h-5 w-5" />
-                  <span className="font-medium">{user.handle}</span>
-                </button>
+            <div suppressHydrationWarning>
+              {loading ? (
+                <div className="w-8 h-8 border-2 border-orange-300 border-t-transparent rounded-full animate-spin"></div>
+              ) : user ? (
+                <div className="relative">
+                  <button
+                    onClick={() => setDropdownOpen(!dropdownOpen)}
+                    className="flex items-center space-x-2 text-white light:text-black hover:text-orange-200 light:hover:text-orange-400 transition-colors px-3 py-2"
+                  >
+                    <User className="h-5 w-5" />
+                    <span className="font-medium">{user.handle}</span>
+                  </button>
 
                 {dropdownOpen && (
                   <>
@@ -437,7 +494,7 @@ export function Navigation() {
                     />
                     <div className="absolute right-0 w-48 bg-[#2a2926] light:bg-white border border-[#454038] light:border-[#d4caba] rounded-lg shadow-lg z-20 py-1">
                       <Link
-                        href={user.id.startsWith('guest_') ? '/guest/profile' : `/profile/${user.handle}`}
+                        href={`/profile/${user.handle}`}
                         onClick={() => setDropdownOpen(false)}
                         className="flex items-center space-x-2 px-4 py-2 text-[#c1b9ad] light:text-[#4a453e] hover:text-white light:hover:text-black hover:bg-[#33302c] light:hover:bg-[#f0ebe0] transition-colors"
                       >
@@ -473,19 +530,20 @@ export function Navigation() {
                     </div>
                   </>
                 )}
-              </div>
-            ) : (
-              <div className="flex items-center space-x-3">
-                <GuestSettings />
-                <Link
-                  href="/auth/signin"
-                  className="flex items-center space-x-1 text-[#c1b9ad] light:text-[#5a5449] hover:text-orange-400 light:hover:text-orange-500 px-4 py-2 rounded-lg hover:bg-[#2f2b27] light:hover:bg-[#f5f1ea] border border-transparent hover:border-[#474239] light:hover:border-[#d4caba] transition-all duration-200"
-                >
-                  <LogIn className="h-4 w-4" />
-                  <span>Sign In</span>
-                </Link>
-              </div>
-            )}
+                </div>
+              ) : (
+                <div className="flex items-center space-x-3">
+                  <GuestSettings />
+                  <Link
+                    href="/auth/signin"
+                    className="flex items-center space-x-1 text-[#c1b9ad] light:text-[#5a5449] hover:text-orange-400 light:hover:text-orange-500 px-4 py-2 rounded-lg hover:bg-[#2f2b27] light:hover:bg-[#f5f1ea] border border-transparent hover:border-[#474239] light:hover:border-[#d4caba] transition-all duration-200"
+                  >
+                    <LogIn className="h-4 w-4" />
+                    <span>Sign In</span>
+                  </Link>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Mobile Menu Buttons */}
@@ -621,7 +679,7 @@ export function Navigation() {
               <div className="space-y-6">
                 {/* User Profile */}
                 <Link
-                  href={user.id.startsWith('guest_') ? '/guest/profile' : `/profile/${user.handle}`}
+                  href={`/profile/${user.handle}`}
                   onClick={() => setIsOpen(false)}
                   className="flex items-center space-x-3 p-4 bg-[#35322e] light:bg-[#faf7f2] border border-[#474239] light:border-[#d4caba] rounded-lg hover:border-orange-300/50 hover:shadow-[0_0_20px_rgba(251,146,60,0.2)] hover:-translate-y-0.5 transition-all duration-200 group"
                   style={{
@@ -794,6 +852,60 @@ export function Navigation() {
                   >
                     Play
                   </Link>
+
+                  {/* Learn Dropdown */}
+                  <div className="space-y-1">
+                    <button
+                      onClick={() => setMobileLearnOpen(!mobileLearnOpen)}
+                      className="flex items-center justify-between w-full px-4 py-3 text-[#c1b9ad] light:text-[#4a453e] hover:text-white light:hover:text-black hover:bg-[#33302c] light:hover:bg-[#f0ebe0] hover:translate-x-1 rounded-lg transition-all duration-200"
+                    >
+                      <span>Learn</span>
+                      <svg 
+                        className={`h-4 w-4 transition-transform duration-200 ${mobileLearnOpen ? 'rotate-180' : ''}`}
+                        fill="none" 
+                        stroke="currentColor" 
+                        viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
+                    
+                    {mobileLearnOpen && (
+                      <div className="ml-4 space-y-1 border-l-2 border-[#474239] light:border-[#d4caba] pl-4">
+                        <Link
+                          href="/study"
+                          onClick={() => {
+                            setIsOpen(false);
+                            setMobileLearnOpen(false);
+                          }}
+                          className="block px-4 py-2 text-sm text-[#a0958a] light:text-[#6b6460] hover:text-white light:hover:text-black hover:bg-[#33302c] light:hover:bg-[#f0ebe0] hover:translate-x-1 rounded-lg transition-all duration-200"
+                        >
+                          Study
+                        </Link>
+                        {/* Practice temporarily hidden - not ready yet */}
+                        {/* <Link
+                          href="/practice"
+                          onClick={() => {
+                            setIsOpen(false);
+                            setMobileLearnOpen(false);
+                          }}
+                          className="block px-4 py-2 text-sm text-[#a0958a] light:text-[#6b6460] hover:text-white light:hover:text-black hover:bg-[#33302c] light:hover:bg-[#f0ebe0] hover:translate-x-1 rounded-lg transition-all duration-200"
+                        >
+                          Practice
+                        </Link> */}
+                        <Link
+                          href="/opening"
+                          onClick={() => {
+                            setIsOpen(false);
+                            setMobileLearnOpen(false);
+                          }}
+                          className="block px-4 py-2 text-sm text-[#a0958a] light:text-[#6b6460] hover:text-white light:hover:text-black hover:bg-[#33302c] light:hover:bg-[#f0ebe0] hover:translate-x-1 rounded-lg transition-all duration-200"
+                        >
+                          Opening Explorer
+                        </Link>
+                      </div>
+                    )}
+                  </div>
 
                   {/* Tournaments Dropdown */}
                   <div className="space-y-1">
