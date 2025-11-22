@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Chess } from 'chess.js';
-import { Chess960Board } from '@chess960/board';
+import { Chess960Board, type PieceType } from '@chess960/board';
 import { useTheme } from '@/contexts/ThemeContext';
 import { BulletStyleClock } from '@/components/chess/BulletStyleClock';
 import { MatchmakingQueue } from '@/components/game/MatchmakingQueue';
@@ -13,6 +13,7 @@ import { PlayerHoverCard } from '@/components/game/PlayerHoverCard';
 import { MoveList } from '@/components/game/MoveList';
 import { OpeningDisplay } from '@/components/game/OpeningDisplay';
 import { ArrowsControl } from '@/components/chess/ArrowsControl';
+import { PromotionDialog } from '@/components/chess/PromotionDialog';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { useGame } from '@/hooks/useGame';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
@@ -383,7 +384,11 @@ function PlayPageContent() {
   };
 
   // Handle promotion selection
-  const handlePromotionSelect = (piece: 'q' | 'r' | 'b' | 'n') => {
+  const handlePromotionSelect = (piece: PieceType) => {
+    // Only allow promotion to q, r, b, n (not p or k)
+    if (piece !== 'q' && piece !== 'r' && piece !== 'b' && piece !== 'n') {
+      return;
+    }
     if (pendingPromotion) {
       handleMove(pendingPromotion.from, pendingPromotion.to, piece);
       setPendingPromotion(null);
@@ -660,12 +665,24 @@ function PlayPageContent() {
                       arrows={boardArrows}
                       onArrowsChange={setBoardArrows}
                       enablePremove={!currentGame.ended}
+                      enableKeyboard={!currentGame.ended && viewingMoveIndex === null}
                       onMove={viewingMoveIndex === null ? handleMove : undefined}
                       onPromotionSelect={handlePromotionSelect}
                       animationDuration={200}
                       showDestinations={true}
                       rookCastle={true}
                       moveInputMode="both"
+                      sounds={{
+                        enabled: false, // Set to true when you add your own sound files to /public/sounds/
+                        baseUrl: '/sounds',
+                        files: {
+                          move: 'move.mp3',
+                          capture: 'capture.mp3',
+                          check: 'check.mp3',
+                          castle: 'castle.mp3',
+                          promotion: 'promote.mp3',
+                        },
+                      }}
                     />
 
                   {/* Board Controls */}

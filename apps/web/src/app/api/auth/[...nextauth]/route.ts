@@ -12,6 +12,8 @@ export const dynamic = 'force-dynamic';
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma) as any,
   secret: process.env.NEXTAUTH_SECRET,
+  // @ts-ignore - trustHost is valid in NextAuth v4 but types may not reflect it
+  trustHost: true, // Required for NextAuth v4
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
@@ -159,36 +161,12 @@ export const authOptions: NextAuthOptions = {
           return true; // Still allow sign-in, adapter will handle it
         }
 
-        // Generate handle for new OAuth users if they don't have one
-        if (!existingUser.handle) {
-          const baseHandle = user.email?.split('@')[0]?.replace(/[^a-zA-Z0-9]/g, '') || 'user';
-          let handle = baseHandle;
-          let counter = 1;
-
-          // Find unique handle
-          while (true) {
-            const handleExists = await prisma.user.findUnique({
-              where: { handle },
-              select: { id: true },
-            });
-
-            if (!handleExists) break;
-            handle = `${baseHandle}${counter}`;
-            counter++;
-          }
-
-          console.log('Creating handle for new user:', handle);
-          await prisma.user.update({
-            where: { id: user.id },
-            data: { handle, lastActivityAt: new Date() },
-          });
-        } else {
-          // Just update lastActivityAt for existing users
-          await prisma.user.update({
-            where: { id: user.id },
-            data: { lastActivityAt: new Date() },
-          });
-        }
+        // Don't auto-generate handle - let user choose it on setup-username page
+        // Just update lastActivityAt
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { lastActivityAt: new Date() },
+        });
 
         // Track user sign up or sign in
         // TODO: Re-enable PostHog tracking after fixing webpack bundling issue

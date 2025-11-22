@@ -37,7 +37,9 @@ export default function GuestProfilePage() {
       // If cookie says user is authenticated but NextAuth says no session,
       // the token is stale - clear it and create guest token
       if (context.isAuth && !session?.user) {
-        console.log('Stale auth token detected (cookie says auth but no NextAuth session), clearing and creating guest token');
+        if (process.env.NODE_ENV === 'development') {
+          console.log('Stale auth token detected (cookie says auth but no NextAuth session), clearing and creating guest token');
+        }
         clearAuthToken();
         // Create a new guest token
         try {
@@ -49,20 +51,26 @@ export default function GuestProfilePage() {
           });
 
           if (response.ok) {
-            console.log('Guest token created after clearing stale auth token');
+            if (process.env.NODE_ENV === 'development') {
+              console.log('Guest token created after clearing stale auth token');
+            }
             await new Promise(resolve => setTimeout(resolve, 100));
             const newContext = getUserContextFromCookies();
             setUserContext(newContext);
             setLoading(false);
             return;
           } else {
-            console.error('Failed to create guest token after clearing stale auth token');
+            if (process.env.NODE_ENV === 'development') {
+              console.error('Failed to create guest token after clearing stale auth token');
+            }
             setUserContext({ isAuth: false, type: 'guest' });
             setLoading(false);
             return;
           }
         } catch (error) {
-          console.error('Error creating guest token after clearing stale auth token:', error);
+          if (process.env.NODE_ENV === 'development') {
+            console.error('Error creating guest token after clearing stale auth token:', error);
+          }
           setUserContext({ isAuth: false, type: 'guest' });
           setLoading(false);
           return;
@@ -71,8 +79,10 @@ export default function GuestProfilePage() {
 
       // If user is authenticated (has a real account), redirect to user profile
       if (context.isAuth) {
-        console.log('Authenticated user detected, redirecting to user profile');
-        console.log('User context:', context);
+        if (process.env.NODE_ENV === 'development') {
+          console.log('Authenticated user detected, redirecting to user profile');
+          console.log('User context:', context);
+        }
         if (context.username) {
           // First check if the user actually exists in the database
           try {
@@ -80,7 +90,9 @@ export default function GuestProfilePage() {
             if (response.ok) {
               router.push(`/profile/${context.username}`);
             } else {
-              console.log('User not found in database, clearing token and staying as guest');
+              if (process.env.NODE_ENV === 'development') {
+                console.log('User not found in database, clearing token and staying as guest');
+              }
               clearAuthToken();
               // Create a new guest token and stay on guest profile page
               try {
@@ -92,22 +104,30 @@ export default function GuestProfilePage() {
                 });
 
                 if (response.ok) {
-                  console.log('Guest token created after clearing invalid user token');
+                  if (process.env.NODE_ENV === 'development') {
+                    console.log('Guest token created after clearing invalid user token');
+                  }
                   // Wait a moment for the cookie to be set, then re-check
                   await new Promise(resolve => setTimeout(resolve, 100));
                   const newContext = getUserContextFromCookies();
                   setUserContext(newContext);
                 } else {
-                  console.error('Failed to create guest token after clearing invalid user token');
+                  if (process.env.NODE_ENV === 'development') {
+                    console.error('Failed to create guest token after clearing invalid user token');
+                  }
                   setUserContext({ isAuth: false, type: 'guest' });
                 }
               } catch (error) {
-                console.error('Error creating guest token after clearing invalid user token:', error);
+                if (process.env.NODE_ENV === 'development') {
+                  console.error('Error creating guest token after clearing invalid user token:', error);
+                }
                 setUserContext({ isAuth: false, type: 'guest' });
               }
             }
           } catch (error) {
-            console.log('Error checking user existence, clearing token and staying as guest');
+            if (process.env.NODE_ENV === 'development') {
+              console.log('Error checking user existence, clearing token and staying as guest');
+            }
             clearAuthToken();
             // Create a new guest token and stay on guest profile page
             try {
@@ -119,22 +139,30 @@ export default function GuestProfilePage() {
               });
 
               if (response.ok) {
-                console.log('Guest token created after error clearing invalid user token');
+                if (process.env.NODE_ENV === 'development') {
+                  console.log('Guest token created after error clearing invalid user token');
+                }
                 // Wait a moment for the cookie to be set, then re-check
                 await new Promise(resolve => setTimeout(resolve, 100));
                 const newContext = getUserContextFromCookies();
                 setUserContext(newContext);
               } else {
-                console.error('Failed to create guest token after error clearing invalid user token');
+                if (process.env.NODE_ENV === 'development') {
+                  console.error('Failed to create guest token after error clearing invalid user token');
+                }
                 setUserContext({ isAuth: false, type: 'guest' });
               }
             } catch (guestError) {
-              console.error('Error creating guest token after error clearing invalid user token:', guestError);
+              if (process.env.NODE_ENV === 'development') {
+                console.error('Error creating guest token after error clearing invalid user token:', guestError);
+              }
               setUserContext({ isAuth: false, type: 'guest' });
             }
           }
         } else {
-          console.log('No username found, redirecting to home');
+          if (process.env.NODE_ENV === 'development') {
+            console.log('No username found, redirecting to home');
+          }
           router.push('/');
         }
         return;
@@ -142,7 +170,9 @@ export default function GuestProfilePage() {
 
       // If no token exists, create a guest token
       if (!context.userId) {
-        console.log('No token found, creating guest token...');
+        if (process.env.NODE_ENV === 'development') {
+          console.log('No token found, creating guest token...');
+        }
         try {
           const response = await fetch('/api/auth/guest-simple', {
             method: 'POST',
@@ -152,18 +182,24 @@ export default function GuestProfilePage() {
           });
 
           if (response.ok) {
-            console.log('Guest token created');
+            if (process.env.NODE_ENV === 'development') {
+              console.log('Guest token created');
+            }
             // Wait a moment for the cookie to be set, then re-check
             await new Promise(resolve => setTimeout(resolve, 100));
             const newContext = getUserContextFromCookies();
             setUserContext(newContext);
           } else {
-            console.error('Failed to create guest token');
+            if (process.env.NODE_ENV === 'development') {
+              console.error('Failed to create guest token');
+            }
             router.push('/');
             return;
           }
         } catch (error) {
-          console.error('Error creating guest token:', error);
+          if (process.env.NODE_ENV === 'development') {
+            console.error('Error creating guest token:', error);
+          }
           router.push('/');
           return;
         }
@@ -171,7 +207,9 @@ export default function GuestProfilePage() {
         setUserContext(context);
       }
     } catch (error) {
-      console.error('Error checking user status:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error checking user status:', error);
+      }
       router.push('/');
     } finally {
       setLoading(false);

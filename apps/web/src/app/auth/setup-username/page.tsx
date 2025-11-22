@@ -41,11 +41,31 @@ export default function SetupUsernamePage() {
         return;
       }
 
-      // Update the session
-      await update();
+      // Sync auth token first (this ensures WebSocket auth works)
+      try {
+        await fetch('/api/auth/sync-token', { method: 'POST' });
+      } catch (err) {
+        console.error('Failed to sync auth token:', err);
+      }
 
-      // Redirect to home
-      router.push('/');
+      // Update the session to get the new handle
+      // Call update multiple times to ensure it refreshes
+      await update();
+      await new Promise(resolve => setTimeout(resolve, 500));
+      await update();
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Verify the session was updated by checking the current session
+      const currentSession = await fetch('/api/auth/session').then(r => r.json());
+      if (currentSession?.user && (currentSession.user as any).handle) {
+        console.log('Session updated successfully with handle:', (currentSession.user as any).handle);
+      } else {
+        console.warn('Session may not have handle yet, forcing refresh');
+      }
+
+      // Force a hard refresh to ensure session is fully updated
+      // This ensures the session callback runs again and fetches the new handle
+      window.location.href = '/';
         } catch {
       setError('Something went wrong');
       setLoading(false);

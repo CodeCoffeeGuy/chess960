@@ -3,12 +3,14 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
-import { UserPlus, Check, MessageSquare, BarChart3, Ban, UserX } from 'lucide-react';
+import { UserPlus, Check, MessageSquare, BarChart3, Ban, UserX, Flag } from 'lucide-react';
 import Link from 'next/link';
 import { UserActivity } from '@/components/profile/UserActivity';
 import { GameHistory } from '@/components/profile/GameHistory';
 import { ChallengeButton } from '@/components/profile/ChallengeButton';
 import { RatingGraph } from '@/components/profile/RatingGraph';
+import { PuzzleHistory } from '@/components/profile/PuzzleHistory';
+import { ReportModal } from '@/components/profile/ReportModal';
 import { useProfileWebSocket } from '@/hooks/useProfileWebSocket';
 
 interface UserStats {
@@ -109,6 +111,7 @@ export default function ProfilePageClient() {
   const [followLoading, setFollowLoading] = useState(false);
   const [isBlocked, setIsBlocked] = useState(false);
   const [blockLoading, setBlockLoading] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
   const [selectedSpeed, setSelectedSpeed] = useState<'bullet' | 'blitz' | 'rapid' | 'classical'>('bullet');
   const [showContent, setShowContent] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -434,10 +437,29 @@ export default function ProfilePageClient() {
                     </>
                   )}
                 </button>
+
+                <button
+                  onClick={() => setShowReportModal(true)}
+                  className="flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 text-sm sm:text-base bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl"
+                  title="Report this user"
+                >
+                  <Flag className="h-4 w-4 sm:h-5 sm:w-5" />
+                  Report
+                </button>
               </div>
             )}
           </div>
         </div>
+
+        {/* Report Modal */}
+        {showReportModal && stats && (
+          <ReportModal
+            isOpen={showReportModal}
+            onClose={() => setShowReportModal(false)}
+            reportedUserId={stats.id}
+            reportedUserHandle={stats.handle}
+          />
+        )}
 
         {/* Ratings */}
         <div className="bg-[#35322e]/50 light:bg-white/50 backdrop-blur-sm rounded-xl sm:rounded-2xl border border-[#474239] light:border-[#d4caba] mb-3 sm:mb-6 md:mb-8">
@@ -574,6 +596,11 @@ export default function ProfilePageClient() {
             <BarChart3 className="w-4 h-4" />
             View Puzzle Dashboard
           </Link>
+        </div>
+
+        {/* Puzzle History */}
+        <div className="mb-4 sm:mb-6 md:mb-8">
+          <PuzzleHistory key={`puzzle-history-${refreshKey}`} userId={stats.id} username={stats.handle} />
         </div>
 
         {/* Game History */}

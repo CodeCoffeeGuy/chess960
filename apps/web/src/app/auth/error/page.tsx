@@ -8,6 +8,7 @@ const errorMessages: Record<string, string> = {
   AccessDenied: 'You do not have permission to sign in.',
   Verification: 'The verification link has expired or has already been used.',
   Callback: 'OAuth callback error. Please check that the redirect URI is configured correctly in your OAuth provider settings.',
+  google: 'Google OAuth configuration error. Please check that GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET are set correctly, and that the redirect URI is added to your Google OAuth settings.',
   Default: 'An error occurred during sign in.',
 };
 
@@ -57,6 +58,24 @@ function ErrorContent() {
               <code className="bg-black/30 px-2 py-1 rounded mt-2 inline-block">
                 https://chess960.game/api/auth/callback/google
               </code>
+            </p>
+          </div>
+        )}
+
+        {error === 'google' && (
+          <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4">
+            <p className="text-sm text-yellow-300 mb-2">
+              Google OAuth configuration error. Please check:
+            </p>
+            <ul className="text-sm text-yellow-300 list-disc list-inside space-y-1">
+              <li>GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET are set in your environment variables</li>
+              <li>The redirect URI is added to your Google OAuth settings:</li>
+            </ul>
+            <code className="bg-black/30 px-2 py-1 rounded mt-2 inline-block text-xs">
+              http://localhost:3000/api/auth/callback/google
+            </code>
+            <p className="text-xs text-yellow-400 mt-2">
+              Check your server logs for more details.
             </p>
           </div>
         )}
