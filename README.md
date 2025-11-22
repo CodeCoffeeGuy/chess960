@@ -337,7 +337,7 @@ This project is licensed under the GNU Affero General Public License v3.0 (AGPL-
 
 <div align="center">
 
-Built by [Nikolas Stojak](https://github.com/CodeAndCoffeeGuy)
+Built by [Nikolas Stojak](https://github.com/CodeCoffeeGuy)
 
 If you find this project useful, please star it on GitHub!
 
