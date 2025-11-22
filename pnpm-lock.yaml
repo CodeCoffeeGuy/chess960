@@ -169,6 +169,9 @@ importers:
       bcryptjs:
         specifier: ^3.0.2
         version: 3.0.2
+      chart.js:
+        specifier: ^4.5.1
+        version: 4.5.1
       chess.js:
         specifier: ^1.4.0
         version: 1.4.0
@@ -208,6 +211,9 @@ importers:
       react:
         specifier: ^18.3.0
         version: 18.3.1
+      react-chartjs-2:
+        specifier: ^5.3.1
+        version: 5.3.1(chart.js@4.5.1)(react@18.3.1)
       react-chessboard:
         specifier: ^5.7.0
         version: 5.7.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -304,11 +310,42 @@ importers:
         specifier: ^5.5.0
         version: 5.9.3
 
+  packages/chess960-puzzle-generator:
+    dependencies:
+      '@chess960/utils':
+        specifier: workspace:*
+        version: link:../utils
+      chess.js:
+        specifier: ^1.0.0-beta.8
+        version: 1.4.0
+      stockfish:
+        specifier: ^17.1.0
+        version: 17.1.0
+    devDependencies:
+      '@types/node':
+        specifier: ^22.0.0
+        version: 22.18.11
+      typescript:
+        specifier: ^5.5.0
+        version: 5.9.3
+
   packages/db:
     dependencies:
+      '@chess960/puzzle-generator':
+        specifier: workspace:*
+        version: link:../chess960-puzzle-generator
+      '@chess960/stockfish':
+        specifier: workspace:*
+        version: link:../stockfish
+      '@chess960/utils':
+        specifier: workspace:*
+        version: link:../utils
       '@prisma/client':
         specifier: ^5.22.0
         version: 5.22.0(prisma@5.22.0)
+      chess.js:
+        specifier: ^1.0.0-beta.8
+        version: 1.4.0
       dotenv:
         specifier: ^16.0.0
         version: 16.6.1
@@ -1876,6 +1913,9 @@ packages:
   '@jridgewell/trace-mapping@0.3.31':
     resolution: {integrity: sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw==}
 
+  '@kurkle/color@0.3.4':
+    resolution: {integrity: sha512-M5UknZPHRu3DEDWoipU6sE8PdkZ6Z/S+v4dD+Ke8IaNlpdSQah50lz1KtcFBa2vsdOnwbbnxJwVM4wty6udA5w==}
+
   '@mrmlnc/readdir-enhanced@2.2.1':
     resolution: {integrity: sha512-bPHp6Ji8b41szTOcaP63VlnbbO5Ny6dwAATtY6JTjh5N2OLrb5Qk/Th5cRkRQhkWCt+EJsYrNB0MiL+Gpn6e3g==}
     engines: {node: '>=4'}
@@ -3376,6 +3416,10 @@ packages:
 
   chardet@0.7.0:
     resolution: {integrity: sha512-mT8iDcrh03qDGRRmoA2hmBJnxpllMR+0/0qlzjqZES6NdiWDcZkCNAk4rPFZ9Q85r27unkiNNg8ZOiwZXBHwcA==}
+
+  chart.js@4.5.1:
+    resolution: {integrity: sha512-GIjfiT9dbmHRiYi6Nl2yFCq7kkwdkp1W/lp2J99rX0yo9tgJGn3lKQATztIjb5tVtevcBtIdICNWqlq5+E8/Pw==}
+    engines: {pnpm: '>=8'}
 
   chess.js@1.4.0:
     resolution: {integrity: sha512-BBJgrrtKQOzFLonR0l+k64A98NLemPwNsCskwb+29bRwobUa4iTm51E1kwGPbWXAcfdDa18nad6vpPPKPWarqw==}
@@ -7273,6 +7317,12 @@ packages:
     resolution: {integrity: sha512-OfBnObtnGgLGfweORmdZbyEz+3dgVePQBb3zipiaDsMHV1NpWm0rDFYIVXFV/AK+x4VIIfWHhrdMIeoTLyRr2g==}
     engines: {node: '>=6'}
 
+  react-chartjs-2@5.3.1:
+    resolution: {integrity: sha512-h5IPXKg9EXpjoBzUfyWJvllMjG2mQ4EiuHQFhms/AjUm0XSZHhyRy2xVmLXHKrtcdrPO4mnGqRtYoD0vp95A0A==}
+    peerDependencies:
+      chart.js: ^4.1.1
+      react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
+
   react-chessboard@5.7.0:
     resolution: {integrity: sha512-ZHu5ABNgTEKSszL6yEFqIm5PW9FrGIAuG1u7EMf5j04bwa7xpboiPrGHNzxwMo1ICJmHlO0gflj/768HqySrLA==}
     engines: {node: '>=20.11.0', pnpm: '>=9.4.0'}
@@ -10804,9 +10854,7 @@ snapshots:
       source-map: 0.6.1
       string-length: 2.0.0
     transitivePeerDependencies:
-      - bufferutil
       - supports-color
-      - utf-8-validate
 
   '@jest/reporters@29.7.0':
     dependencies:
@@ -10958,6 +11006,8 @@ snapshots:
     dependencies:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.5.5
+
+  '@kurkle/color@0.3.4': {}
 
   '@mrmlnc/readdir-enhanced@2.2.1':
     dependencies:
@@ -12789,6 +12839,10 @@ snapshots:
   char-regex@1.0.2: {}
 
   chardet@0.7.0: {}
+
+  chart.js@4.5.1:
+    dependencies:
+      '@kurkle/color': 0.3.4
 
   chess.js@1.4.0: {}
 
@@ -17781,6 +17835,11 @@ snapshots:
       raf: 3.4.1
       regenerator-runtime: 0.13.11
       whatwg-fetch: 3.6.20
+
+  react-chartjs-2@5.3.1(chart.js@4.5.1)(react@18.3.1):
+    dependencies:
+      chart.js: 4.5.1
+      react: 18.3.1
 
   react-chessboard@5.7.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
     dependencies:

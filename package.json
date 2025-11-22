@@ -13,7 +13,7 @@
     "dev:all": "pnpm run --parallel dev",
     "build": "pnpm run build:deps && pnpm --filter @chess960/realtime build",
     "build:web": "pnpm run build:deps && pnpm --filter @chess960/web build",
-    "build:deps": "pnpm db:generate && pnpm --filter @chess960/proto build && pnpm --filter @chess960/db build && pnpm --filter @chess960/utils build && pnpm --filter @chess960/rating build && pnpm --filter @chess960/redis-client build && pnpm --filter @chess960/timer build && pnpm --filter @chess960/streaming build && pnpm --filter @chess960/stockfish build && pnpm --filter @chess960/board build",
+    "build:deps": "pnpm db:generate && pnpm --filter @chess960/proto build && pnpm --filter @chess960/db build && pnpm --filter @chess960/utils build && pnpm --filter @chess960/rating build && pnpm --filter @chess960/redis-client build && pnpm --filter @chess960/timer build && pnpm --filter @chess960/streaming build && pnpm --filter @chess960/stockfish build && pnpm --filter @chess960/puzzle-generator build && pnpm --filter @chess960/board build",
     "start": "node apps/realtime/dist/index.js",
     "lint": "pnpm run --recursive lint",
     "type-check": "pnpm run --recursive typecheck",

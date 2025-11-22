@@ -1,0 +1,54 @@
+{
+  "name": "@chess960/puzzle-generator",
+  "version": "1.0.0",
+  "description": "Generate Chess960 tactical puzzles using Stockfish engine analysis",
+  "keywords": [
+    "chess",
+    "chess960",
+    "fischer-random",
+    "puzzle",
+    "stockfish",
+    "tactics",
+    "generator"
+  ],
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.js"
+    }
+  },
+  "main": "./dist/index.js",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/CodeAndCoffeeGuy/chess960.git",
+    "directory": "packages/chess960-puzzle-generator"
+  },
+  "license": "MIT",
+  "author": "Chess960 Team",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "chess.js": "^1.0.0-beta.8",
+    "stockfish": "^17.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.5.0"
+  },
+  "peerDependencies": {
+    "@chess960/utils": "workspace:*"
+  }
+}
+

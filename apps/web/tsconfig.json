@@ -25,7 +25,8 @@
       "@/components/*": ["./src/components/*"],
       "@/lib/*": ["./src/lib/*"],
       "@/hooks/*": ["./src/hooks/*"],
-      "@/types/*": ["./src/types/*"]
+      "@/types/*": ["./src/types/*"],
+      "@chess960/board": ["../../packages/chess960-board/src"]
     }
   },
   "include": ["next-env.d.ts", "src/**/*.ts", "src/**/*.tsx", ".next/types/**/*.ts"],
@@ -35,6 +36,7 @@
     { "path": "../../packages/proto" },
     { "path": "../../packages/redis-client" },
     { "path": "../../packages/timer" },
-    { "path": "../../packages/streaming" }
+    { "path": "../../packages/streaming" },
+    { "path": "../../packages/chess960-board" }
   ]
 }

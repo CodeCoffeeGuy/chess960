@@ -76,7 +76,7 @@ function AnimatedPiece({
       <img
         src={getPieceImage(piece)}
         alt={`${piece.color} ${piece.type}`}
-        className="w-full h-full object-contain select-none"
+        className="w-full h-full object-contain object-center select-none"
         draggable={false}
       />
     </div>
@@ -2332,7 +2332,7 @@ export function Chess960Board({
               <img
                 src={getPieceImage(piece)}
                 alt={`${piece.color} ${piece.type}`}
-                className="w-full h-full object-contain select-none"
+                className="w-full h-full object-contain object-center select-none"
                 draggable={false}
               />
             </div>
@@ -2358,7 +2358,7 @@ export function Chess960Board({
             <img
               src={getPieceImage(draggedPiece.piece)}
               alt={`${draggedPiece.piece.color} ${draggedPiece.piece.type}`}
-              className="w-full h-full object-contain select-none"
+              className="w-full h-full object-contain object-center select-none"
               draggable={false}
               style={{
                 pointerEvents: 'none',

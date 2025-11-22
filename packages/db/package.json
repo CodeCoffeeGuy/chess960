@@ -26,11 +26,22 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",
-    "prisma:seed": "tsx prisma/seed.ts"
+    "prisma:seed": "tsx prisma/seed.ts",
+    "extract-puzzles": "tsx scripts/extract-puzzles.ts",
+    "generate-endgame-puzzles": "tsx scripts/generate-endgame-puzzles.ts",
+    "extract-endgame-puzzles": "tsx scripts/extract-endgame-puzzles.ts",
+    "generate-endgame-stockfish": "tsx scripts/generate-endgame-puzzles-stockfish-vs-stockfish.ts",
+    "generate-puzzles": "tsx scripts/generate-chess960-puzzles.ts",
+    "generate-practices": "tsx scripts/generate-practices.ts",
+    "seed-practices-from-puzzles": "tsx scripts/seed-practices-from-puzzles.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
-    "dotenv": "^16.0.0"
+    "dotenv": "^16.0.0",
+    "@chess960/stockfish": "workspace:*",
+    "@chess960/utils": "workspace:*",
+    "@chess960/puzzle-generator": "workspace:*",
+    "chess.js": "^1.0.0-beta.8"
   },
   "devDependencies": {
     "@types/node": "^22.18.0",
